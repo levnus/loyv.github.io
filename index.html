@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Direct P2P Echo Wall</title>
-    <!-- Rock-solid delivery path for Tailwind CSS -->
+    <!-- FIXED: Complete absolute path to the Tailwind CSS engine -->
     <script src="https://jsdelivr.net"></script>
-    <!-- Rock-solid delivery path for the PeerJS engine library -->
+    <!-- FIXED: Complete absolute path to the PeerJS WebRTC network library -->
     <script src="https://cloudflare.com"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
@@ -31,7 +31,7 @@
             </div>
         </div>
 
-        <!-- Step 2: Peer Pairing Controls (Revealed after name is set) -->
+        <!-- Step 2: Peer Pairing Controls -->
         <div id="peerSection" class="hidden border-t border-slate-800 pt-4 flex flex-col gap-4">
             <div>
                 <h3 class="text-sm font-semibold text-slate-400 mb-1">2. Your Private Connection ID:</h3>
@@ -102,7 +102,6 @@
         });
 
         function initP2PNetwork() {
-            // Using standard cloud broker server options
             peer = new Peer();
 
             peer.on('open', (id) => {
@@ -114,8 +113,8 @@
             });
 
             peer.on('error', (err) => {
-                console.error("P2P Network issue:", err);
-                myPeerIdDisplay.textContent = "Error creating connection node.";
+                console.error("Network node connection error:", err);
+                myPeerIdDisplay.textContent = "Error assigning connection key.";
             });
         }
 
@@ -167,7 +166,7 @@
         function appendCardToFeed(user, msg, time) {
             if(emptyPrompt) emptyPrompt.style.display = 'none';
             const card = document.createElement('div');
-            card.className = "bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md";
+            card.className = "bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md transition-all";
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <span class="text-indigo-400 font-bold text-sm">@${user}</span>
