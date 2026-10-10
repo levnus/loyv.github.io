@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Direct P2P Echo Wall</title>
-    <!-- FIXED: Absolute CDN link for Tailwind CSS styling -->
-    <script src="https://tailwindcss.com"></script>
-    <!-- FIXED: Absolute CDN link for PeerJS network engine -->
+    <!-- Rock-solid delivery path for Tailwind CSS -->
+    <script src="https://jsdelivr.net"></script>
+    <!-- Rock-solid delivery path for the PeerJS engine library -->
     <script src="https://cloudflare.com"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
@@ -36,7 +36,7 @@
             <div>
                 <h3 class="text-sm font-semibold text-slate-400 mb-1">2. Your Private Connection ID:</h3>
                 <div class="flex items-center gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                    <span id="myPeerId" class="text-indigo-400 font-mono font-bold tracking-wider select-all">Loading ID...</span>
+                    <span id="myPeerId" class="text-indigo-400 font-mono font-bold tracking-wider select-all">Generating ID...</span>
                     <span class="text-[10px] text-slate-500 ml-auto">(Share this code with your friend)</span>
                 </div>
             </div>
@@ -102,7 +102,7 @@
         });
 
         function initP2PNetwork() {
-            // Using standard configurations for the cloud library instance
+            // Using standard cloud broker server options
             peer = new Peer();
 
             peer.on('open', (id) => {
@@ -114,8 +114,8 @@
             });
 
             peer.on('error', (err) => {
-                console.error("Network issue:", err);
-                alert("Connection broker error, please refresh.");
+                console.error("P2P Network issue:", err);
+                myPeerIdDisplay.textContent = "Error creating connection node.";
             });
         }
 
