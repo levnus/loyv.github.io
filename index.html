@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Community Wall</title>
-    <!-- Tailwind CSS for sleek styling -->
-    <script src="https://jsdelivr.net"></script>
+    <title>Direct P2P Echo Wall</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://tailwindcss.com"></script>
+    <!-- PeerJS for backend-free browser-to-browser connection -->
+    <script src="https://unpkg.com"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
     </style>
@@ -14,181 +16,171 @@
 
     <!-- Header Section -->
     <header class="text-center my-6 max-w-xl">
-        <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400 mb-2">Echo Wall</h1>
-        <p class="text-sm text-slate-400">Type a name, post a message, and watch it update your board instantly.</p>
+        <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400 mb-2">P2P Echo Wall</h1>
+        <p class="text-sm text-slate-400">Connect directly with a friend over the network without any databases.</p>
     </header>
 
-    <!-- Account System Container -->
-    <section class="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl mb-6">
-        <!-- Auth Form -->
-        <div id="authSection">
-            <h3 class="text-md font-semibold text-slate-300 mb-3">Choose Your Handle</h3>
-            <div class="flex flex-col sm:flex-row gap-3">
-                <input 
-                    type="text" 
-                    id="usernameInput" 
-                    class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500" 
-                    placeholder="Enter your display name...">
-                <button 
-                    id="loginBtn" 
-                    class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-md">
-                    Set Name
-                </button>
+    <!-- Connection & Handle Manager Panel -->
+    <section class="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl mb-6 flex flex-col gap-4">
+        <!-- Step 1: Set Name -->
+        <div id="nameSection">
+            <h3 class="text-sm font-semibold text-slate-400 mb-2">1. Choose Your Handle</h3>
+            <div class="flex gap-3">
+                <input type="text" id="usernameInput" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500" placeholder="Enter your display name...">
+                <button id="setNameBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-md">Set Name</button>
             </div>
         </div>
 
-        <!-- Profile Bar -->
-        <div id="profileSection" class="hidden flex justify-between items-center">
-            <p class="text-slate-300 font-medium">Logged in as: <span id="currentUserDisplay" class="text-indigo-400 font-bold"></span></p>
-            <button 
-                id="logoutBtn" 
-                class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 py-2 px-4 rounded-lg transition-all">
-                Change Name
-            </button>
+        <!-- Step 2: Peer Pairing Controls (Revealed after name is set) -->
+        <div id="peerSection" class="hidden border-t border-slate-800 pt-4 flex flex-col gap-4">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-400 mb-1">2. Your Private Connection ID:</h3>
+                <div class="flex items-center gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <span id="myPeerId" class="text-indigo-400 font-mono font-bold tracking-wider select-all">Loading ID...</span>
+                    <span class="text-[10px] text-slate-500 ml-auto">(Share this code with your friend)</span>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-800/60 pt-3">
+                <h3 class="text-sm font-semibold text-slate-400 mb-2">3. Connect to a Friend</h3>
+                <div class="flex gap-3">
+                    <input type="text" id="friendIdInput" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono" placeholder="Paste friend's connection ID...">
+                    <button id="connectBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-md">Link Up</button>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Post Input Form -->
     <main class="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
         <form id="noteForm" class="flex flex-col gap-4">
-            <textarea 
-                id="noteInput" 
-                rows="4" 
-                maxlength="250"
-                class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none transition-colors"
-                placeholder="What's on your mind? (250 chars max)..."
-                required></textarea>
-            
-            <button 
-                type="submit" 
-                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed" 
-                id="submitPostBtn" 
-                disabled>
-                Post (Set name above first)
-            </button>
+            <textarea id="noteInput" rows="3" maxlength="250" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none transition-colors" placeholder="Type a message to push to the wall..." required></textarea>
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed" id="submitPostBtn" disabled>Set up pairing above first</button>
         </form>
     </main>
 
-    <!-- Global Feed Board -->
+    <!-- Chat Feed Board -->
     <section class="w-full max-w-xl mt-8">
         <div class="flex justify-between items-center mb-4 px-2">
-            <h2 class="text-lg font-semibold text-slate-400">Live Global Feed</h2>
-            <span id="syncStatus" class="text-xs text-emerald-400 flex items-center gap-1">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Active Sync
+            <h2 class="text-lg font-semibold text-slate-400">Live P2P Board Feed</h2>
+            <span id="syncStatus" class="text-xs text-rose-400 flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-rose-500"></span> Unlinked
             </span>
         </div>
         <div id="boardFeed" class="space-y-4">
-            <!-- Dynamic notes drop here -->
+            <div id="emptyPrompt" class="text-center py-8 text-slate-600 text-sm">No live messages streaming yet. Link with a friend to start chatting!</div>
         </div>
     </section>
 
-    <!-- App Logic Script -->
+    <!-- Logic Script -->
     <script>
-        // DOM Elements
-        const authSection = document.getElementById('authSection');
-        const profileSection = document.getElementById('profileSection');
         const usernameInput = document.getElementById('usernameInput');
-        const loginBtn = document.getElementById('loginBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const currentUserDisplay = document.getElementById('currentUserDisplay');
+        const setNameBtn = document.getElementById('setNameBtn');
+        const nameSection = document.getElementById('nameSection');
+        const peerSection = document.getElementById('peerSection');
+        const myPeerIdDisplay = document.getElementById('myPeerId');
+        const friendIdInput = document.getElementById('friendIdInput');
+        const connectBtn = document.getElementById('connectBtn');
         const noteForm = document.getElementById('noteForm');
         const noteInput = document.getElementById('noteInput');
         const submitPostBtn = document.getElementById('submitPostBtn');
         const boardFeed = document.getElementById('boardFeed');
+        const syncStatus = document.getElementById('syncStatus');
+        const emptyPrompt = document.getElementById('emptyPrompt');
 
-        let currentUsername = localStorage.getItem('wall_username') || '';
+        let myName = '';
+        let peer = null;
+        let activeConnection = null;
 
-        function initAuth() {
-            if (currentUsername) {
-                authSection.classList.add('hidden');
-                profileSection.classList.remove('hidden');
-                currentUserDisplay.textContent = currentUsername;
-                submitPostBtn.removeAttribute('disabled');
-                submitPostBtn.textContent = "Post to Board";
-            } else {
-                authSection.classList.remove('hidden');
-                profileSection.classList.add('hidden');
-                submitPostBtn.setAttribute('disabled', 'true');
-                submitPostBtn.textContent = "Post (Set name above first)";
-            }
-        }
-
-        loginBtn.addEventListener('click', () => {
+        // Step 1: Set Local Handle Identity Name
+        setNameBtn.addEventListener('click', () => {
             const name = usernameInput.value.trim();
-            if (!name) return alert('Please enter a display name!');
-            currentUsername = name;
-            localStorage.setItem('wall_username', name);
-            usernameInput.value = '';
-            initAuth();
+            if (!name) return alert('Enter a handle first!');
+            myName = name;
+            nameSection.innerHTML = `<p class="text-slate-300 font-medium">Chatting as: <span class="text-indigo-400 font-bold">@${myName}</span></p>`;
+            peerSection.classList.remove('hidden');
+            initP2PNetwork();
         });
 
-        logoutBtn.addEventListener('click', () => {
-            currentUsername = '';
-            localStorage.removeItem('wall_username');
-            initAuth();
-        });
+        // Step 2: Initialize WebRTC Connection Broker
+        function initP2PNetwork() {
+            peer = new Peer();
 
-        // Pulls down messages stored inside the browser cache pipeline
-        function fetchLocalFeed() {
-            const posts = JSON.parse(localStorage.getItem('shared_wall_posts')) || [];
-            renderFeed(posts);
-        }
+            peer.on('open', (id) => {
+                myPeerIdDisplay.textContent = id;
+            });
 
-        // Appends your message text inside the array sequence
-        noteForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const text = noteInput.value.trim();
-            if (!text || !currentUsername) return;
-
-            const newPost = {
-                username: currentUsername,
-                message: text,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-
-            let currentPosts = JSON.parse(localStorage.getItem('shared_wall_posts')) || [];
-            currentPosts.unshift(newPost);
-
-            // Cap layout entries list structure at 40 rows
-            if (currentPosts.length > 40) currentPosts = currentPosts.slice(0, 40);
-
-            localStorage.setItem('shared_wall_posts', JSON.stringify(currentPosts));
-            noteInput.value = '';
-            fetchLocalFeed();
-        });
-
-        function renderFeed(posts) {
-            boardFeed.innerHTML = '';
-
-            if (posts.length === 0) {
-                boardFeed.innerHTML = `<div class="text-center py-8 text-slate-600 text-sm">No posts yet. Write something to start the wall!</div>`;
-                return;
-            }
-
-            posts.forEach(post => {
-                const card = document.createElement('div');
-                card.className = "bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md transition-all hover:border-slate-700 animate-fade-in";
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-indigo-400 font-bold text-sm">@${post.username}</span>
-                        <span class="text-[10px] text-slate-500">${post.timestamp}</span>
-                    </div>
-                    <p class="text-slate-200 text-sm leading-relaxed">${post.message}</p>
-                `;
-                boardFeed.appendChild(card);
+            // Handle incoming connection requests from a friend
+            peer.on('connection', (conn) => {
+                setupChatConnection(conn);
             });
         }
 
-        // Run initializations
-        initAuth();
-        fetchLocalFeed();
-
-        // Listen for data storage changes across multiple open tabs / browser frames
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'shared_wall_posts') {
-                fetchLocalFeed();
-            }
+        // Step 3: Connect out to a friend's active ID window
+        connectBtn.addEventListener('click', () => {
+            const friendId = friendIdInput.value.trim();
+            if (!friendId) return alert('Paste an ID first!');
+            
+            connectBtn.textContent = 'Connecting...';
+            const conn = peer.connect(friendId);
+            setupChatConnection(conn);
         });
+
+        // Step 4: Handle active message channels
+        function setupChatConnection(conn) {
+            activeConnection = conn;
+
+            activeConnection.on('open', () => {
+                syncStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Linked with Friend';
+                syncStatus.className = "text-xs text-emerald-400 flex items-center gap-1";
+                submitPostBtn.removeAttribute('disabled');
+                submitPostBtn.textContent = "Broadcast to Friend";
+                connectBtn.textContent = 'Connected!';
+                connectBtn.classList.replace('bg-emerald-600', 'bg-slate-800');
+                if(emptyPrompt) emptyPrompt.style.display = 'none';
+            });
+
+            // Receive live messages from friend's browser frame
+            activeConnection.on('data', (data) => {
+                appendCardToFeed(data.username, data.message, data.timestamp);
+            });
+        }
+
+        // Send a post message over the WebRTC data pipe channel layout
+        noteForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = noteInput.value.trim();
+            if (!text || !activeConnection) return;
+
+            const timeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            const messagePayload = {
+                username: myName,
+                message: text,
+                timestamp: timeLabel
+            };
+
+            // Transmit straight into friend's browser window display viewport
+            activeConnection.send(messagePayload);
+            
+            // Render on our own feed block locally as well
+            appendCardToFeed(myName, text, timeLabel);
+            noteInput.value = '';
+        });
+
+        function appendCardToFeed(user, msg, time) {
+            if(emptyPrompt) emptyPrompt.style.display = 'none';
+            const card = document.createElement('div');
+            card.className = "bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md transition-all hover:border-slate-700";
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-indigo-400 font-bold text-sm">@${user}</span>
+                    <span class="text-[10px] text-slate-500">${time}</span>
+                </div>
+                <p class="text-slate-200 text-sm leading-relaxed">${msg}</p>
+            `;
+            boardFeed.insertBefore(card, boardFeed.firstChild);
+        }
     </script>
 </body>
 </html>
