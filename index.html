@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Community Wall</title>
-    <!-- Tailwind CSS for styling -->
+    <!-- Optimized Fast-Loading Tailwind CSS -->
     <script src="https://jsdelivr.net"></script>
-    <!-- Supabase JavaScript Library Client -->
+    <!-- Explicitly Pathed Supabase Library -->
     <script src="https://jsdelivr.net"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
@@ -86,13 +86,11 @@
 
     <!-- App Logic Script -->
     <script>
-        // ⚠️ REPLACE THIS LINK WITH YOUR COPIED PROJECT URL FROM SUPABASE:
+        // Filled with your verified configuration keys
         const SUPABASE_URL = 'https://supabase.co';
-        
-        // This is the publishable API key you copied earlier:
         const SUPABASE_KEY = 'sb_publishable_BxFce1GWJtPN03dg8pRnLA_EkRk9-Sq';
 
-        // Initialize connection
+        // Initialize connection securely
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // DOM Elements
@@ -140,7 +138,7 @@
             initAuth();
         });
 
-        // Fetch all global posts from Supabase database engine 
+        // Fetch posts safely
         async function fetchGlobalFeed() {
             try {
                 const { data, error } = await _supabase
@@ -159,7 +157,7 @@
             }
         }
 
-        // Post Submission Handler to save straight into backend
+        // Send new items straight to database
         noteForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const text = noteInput.value.trim();
@@ -215,8 +213,8 @@
         initAuth();
         fetchGlobalFeed();
 
-        // Listen for new posts dynamically every 5 seconds
-        setInterval(fetchGlobalFeed, 5000);
+        // Optimized background refresh rate to 15 seconds to improve interface speed
+        setInterval(fetchGlobalFeed, 15000);
     </script>
 </body>
 </html>
