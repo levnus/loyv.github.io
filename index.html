@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Community Wall</title>
-    <!-- FIXED: Full absolute path to Tailwind CSS -->
-    <script src="https://jsdelivr.net"></script>
-    <!-- FIXED: Full absolute path to Supabase Library -->
-    <script src="https://jsdelivr.net"></script>
+    <title>Global Echo Wall</title>
+    <!-- Tailwind CSS for sleek styling -->
+    <script src="https://tailwindcss.com"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
     </style>
@@ -17,7 +15,7 @@
     <!-- Header Section -->
     <header class="text-center my-6 max-w-xl">
         <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400 mb-2">Global Echo Wall</h1>
-        <p class="text-sm text-slate-400">Your messages are now stored permanently in a global cloud database vault.</p>
+        <p class="text-sm text-slate-400">Set a name and broadcast messages to everyone in the world instantly.</p>
     </header>
 
     <!-- Account System Container -->
@@ -76,23 +74,19 @@
         <div class="flex justify-between items-center mb-4 px-2">
             <h2 class="text-lg font-semibold text-slate-400">Live Global Feed</h2>
             <span id="syncStatus" class="text-xs text-emerald-400 flex items-center gap-1">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Connecting...
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Connected
             </span>
         </div>
         <div id="boardFeed" class="space-y-4">
-            <div class="text-center py-8 text-slate-600 text-sm animate-pulse">Connecting to server database...</div>
+            <div class="text-center py-8 text-slate-600 text-sm animate-pulse">Loading posts...</div>
         </div>
     </section>
 
     <!-- App Logic Script -->
     <script>
-        const SUPABASE_URL = 'https://supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_BxFce1GWJtPN03dg8pRnLA_EkRk9-Sq';
+        // Public server box reserved entirely for your global app messages
+        const DB_URL = 'https://kvend.net';
 
-        // Initialize connection
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // DOM Elements
         const authSection = document.getElementById('authSection');
         const profileSection = document.getElementById('profileSection');
         const usernameInput = document.getElementById('usernameInput');
@@ -137,47 +131,63 @@
             initAuth();
         });
 
+        // Pull down messages stored globally on the server network
         async function fetchGlobalFeed() {
             try {
-                const { data, error } = await _supabase
-                    .from('global_posts')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-                renderFeed(data || []);
-                syncStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Cloud Connected';
-                syncStatus.className = "text-xs text-emerald-400 flex items-center gap-1";
+                const response = await fetch(DB_URL);
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                const posts = Array.isArray(data) ? data : [];
+                renderFeed(posts);
+                
+                syncStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Global Live';
             } catch (error) {
-                console.error("Database connection failure:", error);
-                syncStatus.textContent = "Database Error";
-                syncStatus.className = "text-xs text-rose-400";
+                console.error("Connection lag:", error);
             }
         }
 
+        // Upload your message so other people can see it instantly
         noteForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const text = noteInput.value.trim();
             if (!text || !currentUsername) return;
 
             submitPostBtn.setAttribute('disabled', 'true');
-            submitPostBtn.textContent = "Uploading...";
+            submitPostBtn.textContent = "Sending...";
 
-            const timeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const newPost = {
+                username: currentUsername,
+                message: text,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
 
             try {
-                const { error } = await _supabase
-                    .from('global_posts')
-                    .insert([
-                        { username: currentUsername, message: text, timestamp: timeLabel }
-                    ]);
+                // Grab what's on the server right now
+                const response = await fetch(DB_URL);
+                let currentPosts = [];
+                if (response.ok) {
+                    const data = await response.json();
+                    currentPosts = Array.isArray(data) ? data : [];
+                }
 
-                if (error) throw error;
+                // Shove your new message right onto the top of the stack
+                currentPosts.unshift(newPost);
+
+                // Keep only the newest 50 posts so the page loads super fast
+                if (currentPosts.length > 50) currentPosts = currentPosts.slice(0, 50);
+
+                // Save back up to the server box
+                await fetch(DB_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(currentPosts)
+                });
 
                 noteInput.value = '';
                 await fetchGlobalFeed();
             } catch (err) {
-                alert("Could not save message to database: " + err.message);
+                alert("Failed to send post.");
             } finally {
                 submitPostBtn.removeAttribute('disabled');
                 submitPostBtn.textContent = "Post to Board";
@@ -188,13 +198,13 @@
             boardFeed.innerHTML = '';
 
             if (posts.length === 0) {
-                boardFeed.innerHTML = `<div class="text-center py-8 text-slate-600 text-sm">No one has posted globally yet. Be the first!</div>`;
+                boardFeed.innerHTML = `<div class="text-center py-8 text-slate-600 text-sm">No global posts yet. Write something to start the wall!</div>`;
                 return;
             }
 
             posts.forEach(post => {
                 const card = document.createElement('div');
-                card.className = "bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md transition-all hover:border-slate-700";
+                card.className = "bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md";
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <span class="text-indigo-400 font-bold text-sm">@${post.username || 'anonymous'}</span>
@@ -208,7 +218,9 @@
 
         initAuth();
         fetchGlobalFeed();
-        setInterval(fetchGlobalFeed, 10000);
+
+        // Check for new posts from other people every 5 seconds automatically
+        setInterval(fetchGlobalFeed, 5000);
     </script>
 </body>
 </html>
