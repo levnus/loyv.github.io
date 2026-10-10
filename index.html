@@ -1,1 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anonymous Wall</title>
+    <!-- Tailwind CSS for sleek styling -->
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; }
+    </style>
+</head>
+<body class="font-sans min-h-screen flex flex-col items-center p-6">
+
+    <!-- Header Section -->
+    <header class="text-center my-8 max-w-xl">
+        <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400 mb-2">Echo Wall</h1>
+        <p class="text-sm text-slate-400">Post your anonymous thoughts. No accounts. Fully ephemeral.</p>
+    </header>
+
+    <!-- Post Input Form -->
+    <main class="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+        <form id="noteForm" class="flex flex-col gap-4">
+            <textarea 
+                id="noteInput" 
+                rows="4" 
+                maxlength="250"
+                class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none transition-colors"
+                placeholder="What's on your mind? (250 chars max)..."
+                required></textarea>
+            
+            <button 
+                type="submit" 
+                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]">
+                Broadcast Anonymously
+            </button>
+        </form>
+    </main>
+
+    <!-- The Global Feed Board -->
+    <section class="w-full max-w-xl mt-10">
+        <h2 class="text-lg font-semibold text-slate-400 mb-4 px-2">Live Board</h2>
+        <div id="boardFeed" class="space-y-4">
+            <!-- Sample static notes showing how they look -->
+            <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl shadow-md">
+                <p class="text-slate-200">Listening to the rain outside right now. There's something uniquely comforting about being up late when the rest of the world is asleep. 🌧️</p>
+                <span class="text-xs text-slate-500 block mt-2 text-right">Posted a few mins ago</span>
+            </div>
+            <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl shadow-md">
+                <p class="text-slate-200">I hope whatever you're worrying about tonight works itself out. You've got this.</p>
+                <span class="text-xs text-slate-500 block mt-2 text-right">Posted 2 hours ago</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Simple client script for testing inputs locally -->
+    <script>
+        document.getElementById('noteForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const input = document.getElementById('noteInput');
+            const text = input.value.trim();
+            if(!text) return;
+
+            // Dynamically prepend new card to the local UI board
+            const feed = document.getElementById('boardFeed');
+            const card = document.createElement('div');
+            card.className = "bg-slate-900 border border-indigo-900/40 p-4 rounded-xl shadow-md animate-fade-in";
+            card.innerHTML = `<p class="text-indigo-100">${text}</p><span class="text-xs text-indigo-400/60 block mt-2 text-right">Posted just now</span>`;
+            
+            feed.insertBefore(card, feed.firstChild);
+            input.value = '';
+        });
+    </script>
+</body>
+</html>
 
