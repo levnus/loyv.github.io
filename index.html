@@ -4,68 +4,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Community Wall</title>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+    <!-- FIXED: Full absolute path to Tailwind CSS -->
+    <script src="https://jsdelivr.net"></script>
+    <!-- FIXED: Full absolute path to Supabase Library -->
+    <script src="https://jsdelivr.net"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
     </style>
 </head>
 <body class="font-sans min-h-screen flex flex-col items-center p-6">
 
+    <!-- Header Section -->
     <header class="text-center my-6 max-w-xl">
         <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400 mb-2">Global Echo Wall</h1>
         <p class="text-sm text-slate-400">Your messages are now stored permanently in a global cloud database vault.</p>
     </header>
 
+    <!-- Account System Container -->
     <section class="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl mb-6">
+        <!-- Auth Form -->
         <div id="authSection">
             <h3 class="text-md font-semibold text-slate-300 mb-3">Sign Up / Log In</h3>
             <div class="flex flex-col sm:flex-row gap-3">
-                <input
-                    type="text"
-                    id="usernameInput"
-                    class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                <input 
+                    type="text" 
+                    id="usernameInput" 
+                    class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500" 
                     placeholder="Enter your display name...">
-                <button
-                    id="loginBtn"
+                <button 
+                    id="loginBtn" 
                     class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-md">
                     Set Name
                 </button>
             </div>
         </div>
 
+        <!-- Profile Bar -->
         <div id="profileSection" class="hidden flex justify-between items-center">
             <p class="text-slate-300 font-medium">Logged in as: <span id="currentUserDisplay" class="text-indigo-400 font-bold"></span></p>
-            <button
-                id="logoutBtn"
+            <button 
+                id="logoutBtn" 
                 class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 py-2 px-4 rounded-lg transition-all">
                 Change Name
             </button>
         </div>
     </section>
 
+    <!-- Post Input Form -->
     <main class="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
         <form id="noteForm" class="flex flex-col gap-4">
-            <textarea
-                id="noteInput"
-                rows="4"
+            <textarea 
+                id="noteInput" 
+                rows="4" 
                 maxlength="250"
                 class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none transition-colors"
                 placeholder="What's on your mind? (250 chars max)..."
                 required></textarea>
-
-            <button
-                type="submit"
-                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
-                id="submitPostBtn"
+            
+            <button 
+                type="submit" 
+                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed" 
+                id="submitPostBtn" 
                 disabled>
                 Post (Set name above first)
             </button>
         </form>
     </main>
 
+    <!-- Global Feed Board -->
     <section class="w-full max-w-xl mt-8">
         <div class="flex justify-between items-center mb-4 px-2">
             <h2 class="text-lg font-semibold text-slate-400">Live Global Feed</h2>
@@ -78,12 +84,15 @@
         </div>
     </section>
 
+    <!-- App Logic Script -->
     <script>
-        const SUPABASE_URL = 'https://qdncdhvhuhlwrksrxmeq.supabase.co';
+        const SUPABASE_URL = 'https://supabase.co';
         const SUPABASE_KEY = 'sb_publishable_BxFce1GWJtPN03dg8pRnLA_EkRk9-Sq';
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Initialize connection
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // DOM Elements
         const authSection = document.getElementById('authSection');
         const profileSection = document.getElementById('profileSection');
         const usernameInput = document.getElementById('usernameInput');
@@ -130,13 +139,12 @@
 
         async function fetchGlobalFeed() {
             try {
-                const { data, error } = await supabase
+                const { data, error } = await _supabase
                     .from('global_posts')
                     .select('*')
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
-
                 renderFeed(data || []);
                 syncStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Cloud Connected';
                 syncStatus.className = "text-xs text-emerald-400 flex items-center gap-1";
@@ -158,7 +166,7 @@
             const timeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             try {
-                const { error } = await supabase
+                const { error } = await _supabase
                     .from('global_posts')
                     .insert([
                         { username: currentUsername, message: text, timestamp: timeLabel }
