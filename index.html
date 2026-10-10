@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Community Wall</title>
-    <!-- Optimized Fast-Loading Tailwind CSS -->
-    <script src="https://jsdelivr.net"></script>
-    <!-- Explicitly Pathed Supabase Library -->
+    <!-- Official Tailwind CSS Link -->
+    <script src="https://tailwindcss.com"></script>
+    <!-- Official Full Supabase Library Link -->
     <script src="https://jsdelivr.net"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
@@ -86,7 +86,7 @@
 
     <!-- App Logic Script -->
     <script>
-        // Filled with your verified configuration keys
+        // Set up connection details manually
         const SUPABASE_URL = 'https://supabase.co';
         const SUPABASE_KEY = 'sb_publishable_BxFce1GWJtPN03dg8pRnLA_EkRk9-Sq';
 
@@ -213,8 +213,8 @@
         initAuth();
         fetchGlobalFeed();
 
-        // Optimized background refresh rate to 15 seconds to improve interface speed
-        setInterval(fetchGlobalFeed, 15000);
+        // Check for new posts every 10 seconds
+        setInterval(fetchGlobalFeed, 10000);
     </script>
 </body>
 </html>
