@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anonymous Wall</title>
-    <!-- Tailwind CSS for sleek styling -->
+    <title>Community Wall</title>
+    <!-- Tailwind CSS for styling -->
     <script src="https://jsdelivr.net"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
@@ -13,10 +13,40 @@
 <body class="font-sans min-h-screen flex flex-col items-center p-6">
 
     <!-- Header Section -->
-    <header class="text-center my-8 max-w-xl">
-        <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400 mb-2">Echo Wall</h1>
-        <p class="text-sm text-slate-400">Post your anonymous thoughts. No accounts. Fully ephemeral.</p>
+    <header class="text-center my-6 max-w-xl">
+        <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400 mb-2">Community Wall</h1>
+        <p class="text-sm text-slate-400">Create an account to share your thoughts with your name attached.</p>
     </header>
+
+    <!-- Account System Container -->
+    <section class="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl mb-6">
+        <!-- Auth Form (Shown when logged out) -->
+        <div id="authSection">
+            <h3 class="text-md font-semibold text-slate-300 mb-3">Sign Up / Log In</h3>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input 
+                    type="text" 
+                    id="usernameInput" 
+                    class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500" 
+                    placeholder="Enter your display name...">
+                <button 
+                    id="loginBtn" 
+                    class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-md">
+                    Set Name
+                </button>
+            </div>
+        </div>
+
+        <!-- Profile Bar (Shown when logged in) -->
+        <div id="profileSection" class="hidden flex justify-between items-center">
+            <p class="text-slate-300 font-medium">Logged in as: <span id="currentUserDisplay" class="text-indigo-400 font-bold"></span></p>
+            <button 
+                id="logoutBtn" 
+                class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 py-2 px-4 rounded-lg transition-all">
+                Change Name
+            </button>
+        </div>
+    </section>
 
     <!-- Post Input Form -->
     <main class="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
@@ -31,46 +61,126 @@
             
             <button 
                 type="submit" 
-                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]">
-                Broadcast Anonymously
+                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed" 
+                id="submitPostBtn" 
+                disabled>
+                Post (Set name above first)
             </button>
         </form>
     </main>
 
-    <!-- The Global Feed Board -->
-    <section class="w-full max-w-xl mt-10">
-        <h2 class="text-lg font-semibold text-slate-400 mb-4 px-2">Live Board</h2>
+    <!-- Global Feed Board -->
+    <section class="w-full max-w-xl mt-8">
+        <h2 class="text-lg font-semibold text-slate-400 mb-4 px-2">Live Feed</h2>
         <div id="boardFeed" class="space-y-4">
-            <!-- Sample static notes showing how they look -->
-            <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl shadow-md">
-                <p class="text-slate-200">Listening to the rain outside right now. There's something uniquely comforting about being up late when the rest of the world is asleep. 🌧️</p>
-                <span class="text-xs text-slate-500 block mt-2 text-right">Posted a few mins ago</span>
-            </div>
-            <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl shadow-md">
-                <p class="text-slate-200">I hope whatever you're worrying about tonight works itself out. You've got this.</p>
-                <span class="text-xs text-slate-500 block mt-2 text-right">Posted 2 hours ago</span>
-            </div>
+            <!-- Feed cards drop in here -->
         </div>
     </section>
 
-    <!-- Simple client script for testing inputs locally -->
+    <!-- App Logic Script -->
     <script>
-        document.getElementById('noteForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const input = document.getElementById('noteInput');
-            const text = input.value.trim();
-            if(!text) return;
+        // DOM Elements
+        const authSection = document.getElementById('authSection');
+        const profileSection = document.getElementById('profileSection');
+        const usernameInput = document.getElementById('usernameInput');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const currentUserDisplay = document.getElementById('currentUserDisplay');
+        const noteForm = document.getElementById('noteForm');
+        const noteInput = document.getElementById('noteInput');
+        const submitPostBtn = document.getElementById('submitPostBtn');
+        const boardFeed = document.getElementById('boardFeed');
 
-            // Dynamically prepend new card to the local UI board
-            const feed = document.getElementById('boardFeed');
-            const card = document.createElement('div');
-            card.className = "bg-slate-900 border border-indigo-900/40 p-4 rounded-xl shadow-md animate-fade-in";
-            card.innerHTML = `<p class="text-indigo-100">${text}</p><span class="text-xs text-indigo-400/60 block mt-2 text-right">Posted just now</span>`;
-            
-            feed.insertBefore(card, feed.firstChild);
-            input.value = '';
+        // State Variable
+        let currentUsername = localStorage.getItem('wall_username') || '';
+
+        // Initialize App State
+        function initAuth() {
+            if (currentUsername) {
+                authSection.classList.add('hidden');
+                profileSection.classList.remove('hidden');
+                currentUserDisplay.textContent = currentUsername;
+                submitPostBtn.removeAttribute('disabled');
+                submitPostBtn.textContent = "Post to Board";
+            } else {
+                authSection.classList.remove('hidden');
+                profileSection.classList.add('hidden');
+                submitPostBtn.setAttribute('disabled', 'true');
+                submitPostBtn.textContent = "Post (Set name above first)";
+            }
+        }
+
+        // Login Handler
+        loginBtn.addEventListener('click', () => {
+            const name = usernameInput.value.trim();
+            if (!name) return alert('Please enter a display name!');
+            currentUsername = name;
+            localStorage.setItem('wall_username', name);
+            usernameInput.value = '';
+            initAuth();
         });
+
+        // Logout Handler
+        logoutBtn.addEventListener('click', () => {
+            currentUsername = '';
+            localStorage.removeItem('wall_username');
+            initAuth();
+        });
+
+        // Post Submission Handler
+        noteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const text = noteInput.value.trim();
+            if (!text || !currentUsername) return;
+
+            // Save to browser simulation database array
+            const newPost = {
+                username: currentUsername,
+                message: text,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+
+            saveAndRenderPost(newPost);
+            noteInput.value = '';
+        });
+
+        // Add Post UI Item and save to local mock database array
+        function saveAndRenderPost(post) {
+            // Retrieve existing storage database array
+            let localDatabase = JSON.parse(localStorage.getItem('wall_posts')) || [];
+            localDatabase.unshift(post); // Insert new post at top
+            localStorage.setItem('wall_posts', JSON.stringify(localDatabase));
+            
+            renderFeed();
+        }
+
+        // Render posts inside browser frame
+        function renderFeed() {
+            boardFeed.innerHTML = '';
+            let localDatabase = JSON.parse(localStorage.getItem('wall_posts')) || [];
+
+            if(localDatabase.length === 0) {
+                boardFeed.innerHTML = `<div class="text-center py-8 text-slate-600 text-sm">No posts yet. Be the first to share something!</div>`;
+                return;
+            }
+
+            localDatabase.forEach(post => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-850 p-5 rounded-xl shadow-md";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-indigo-400 font-bold text-sm">@${post.username}</span>
+                        <span class="text-[10px] text-slate-500">${post.timestamp}</span>
+                    </div>
+                    <p class="text-slate-200 text-sm leading-relaxed">${post.message}</p>
+                `;
+                boardFeed.appendChild(card);
+            });
+        }
+
+        // Run on initial load
+        initAuth();
+        renderFeed();
     </script>
 </body>
 </html>
-
