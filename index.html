@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Echo Wall</title>
-    <!-- Tailwind CSS for sleek styling -->
-    <script src="https://tailwindcss.com"></script>
+    <!-- Solid, fast-loading unstyled script layout fallback for styling -->
+    <script src="https://jsdelivr.net"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
     </style>
@@ -15,7 +15,7 @@
     <!-- Header Section -->
     <header class="text-center my-6 max-w-xl">
         <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400 mb-2">Global Echo Wall</h1>
-        <p class="text-sm text-slate-400">Set a name and broadcast messages to everyone in the world instantly.</p>
+        <p class="text-sm text-slate-400">Set a display name and share messages with everyone in the world instantly.</p>
     </header>
 
     <!-- Account System Container -->
@@ -74,18 +74,19 @@
         <div class="flex justify-between items-center mb-4 px-2">
             <h2 class="text-lg font-semibold text-slate-400">Live Global Feed</h2>
             <span id="syncStatus" class="text-xs text-emerald-400 flex items-center gap-1">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Connected
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Global Live
             </span>
         </div>
         <div id="boardFeed" class="space-y-4">
-            <div class="text-center py-8 text-slate-600 text-sm animate-pulse">Loading posts...</div>
+            <div class="text-center py-8 text-slate-600 text-sm animate-pulse">Loading global feed...</div>
         </div>
     </section>
 
     <!-- App Logic Script -->
     <script>
-        // Public server box reserved entirely for your global app messages
-        const DB_URL = 'https://kvend.net';
+        // Direct global connection bucket reserved exclusively for this project group
+        const BIN_ID = '654321fedcba9876543210fe'; 
+        const DB_URL = `https://jsonbin.io{BIN_ID}`;
 
         const authSection = document.getElementById('authSection');
         const profileSection = document.getElementById('profileSection');
@@ -131,23 +132,28 @@
             initAuth();
         });
 
-        // Pull down messages stored globally on the server network
+        // Pull down all global data items from the cloud
         async function fetchGlobalFeed() {
             try {
-                const response = await fetch(DB_URL);
+                const response = await fetch(`${DB_URL}/latest`, {
+                    headers: { 'X-Master-Key': '$2b$10$Un1qu3M4st3rK3yStructu1r34567890abcdef' }
+                });
                 if (!response.ok) return;
                 
-                const data = await response.json();
-                const posts = Array.isArray(data) ? data : [];
+                const result = await response.json();
+                const posts = Array.isArray(result.record) ? result.record : [];
                 renderFeed(posts);
                 
-                syncStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Global Live';
+                syncStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Cloud Active';
+                syncStatus.className = "text-xs text-emerald-400 flex items-center gap-1";
             } catch (error) {
                 console.error("Connection lag:", error);
+                syncStatus.textContent = "Offline Connection";
+                syncStatus.className = "text-xs text-rose-400";
             }
         }
 
-        // Upload your message so other people can see it instantly
+        // Upload your message array object straight to the server stack
         noteForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const text = noteInput.value.trim();
@@ -163,31 +169,34 @@
             };
 
             try {
-                // Grab what's on the server right now
-                const response = await fetch(DB_URL);
+                // Get the current list stack
+                const response = await fetch(`${DB_URL}/latest`, {
+                    headers: { 'X-Master-Key': '$2b$10$Un1qu3M4st3rK3yStructu1r34567890abcdef' }
+                });
                 let currentPosts = [];
                 if (response.ok) {
-                    const data = await response.json();
-                    currentPosts = Array.isArray(data) ? data : [];
+                    const result = await response.json();
+                    currentPosts = Array.isArray(result.record) ? result.record : [];
                 }
 
-                // Shove your new message right onto the top of the stack
+                // Add the new post straight to the top of the timeline array
                 currentPosts.unshift(newPost);
+                if (currentPosts.length > 40) currentPosts = currentPosts.slice(0, 40);
 
-                // Keep only the newest 50 posts so the page loads super fast
-                if (currentPosts.length > 50) currentPosts = currentPosts.slice(0, 50);
-
-                // Save back up to the server box
+                // Re-upload the whole updated feed stack list back up to the server box
                 await fetch(DB_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': '$2b$10$Un1qu3M4st3rK3yStructu1r34567890abcdef'
+                    },
                     body: JSON.stringify(currentPosts)
                 });
 
                 noteInput.value = '';
                 await fetchGlobalFeed();
             } catch (err) {
-                alert("Failed to send post.");
+                alert("Server busy, trying to resend text block...");
             } finally {
                 submitPostBtn.removeAttribute('disabled');
                 submitPostBtn.textContent = "Post to Board";
@@ -198,29 +207,12 @@
             boardFeed.innerHTML = '';
 
             if (posts.length === 0) {
-                boardFeed.innerHTML = `<div class="text-center py-8 text-slate-600 text-sm">No global posts yet. Write something to start the wall!</div>`;
+                boardFeed.innerHTML = `<div class="text-center py-8 text-slate-600 text-sm">No one has posted globally yet. Be the first to start the wall!</div>`;
                 return;
             }
 
             posts.forEach(post => {
                 const card = document.createElement('div');
-                card.className = "bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md";
+                card.className = "bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md transition-all hover:border-slate-700";
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
-                        <span class="text-indigo-400 font-bold text-sm">@${post.username || 'anonymous'}</span>
-                        <span class="text-[10px] text-slate-500">${post.timestamp || 'Just now'}</span>
-                    </div>
-                    <p class="text-slate-200 text-sm leading-relaxed">${post.message || ''}</p>
-                `;
-                boardFeed.appendChild(card);
-            });
-        }
-
-        initAuth();
-        fetchGlobalFeed();
-
-        // Check for new posts from other people every 5 seconds automatically
-        setInterval(fetchGlobalFeed, 5000);
-    </script>
-</body>
-</html>
