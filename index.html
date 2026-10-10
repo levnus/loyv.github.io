@@ -6,6 +6,8 @@
     <title>Global Community Wall</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://jsdelivr.net"></script>
+    <!-- Supabase JavaScript Library Client -->
+    <script src="https://jsdelivr.net"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
     </style>
@@ -15,12 +17,12 @@
     <!-- Header Section -->
     <header class="text-center my-6 max-w-xl">
         <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400 mb-2">Global Echo Wall</h1>
-        <p class="text-sm text-slate-400">Set a display name and broadcast messages to everyone in the world instantly.</p>
+        <p class="text-sm text-slate-400">Your messages are now stored permanently in a global cloud database vault.</p>
     </header>
 
     <!-- Account System Container -->
     <section class="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl mb-6">
-        <!-- Auth Form (Shown when logged out) -->
+        <!-- Auth Form -->
         <div id="authSection">
             <h3 class="text-md font-semibold text-slate-300 mb-3">Sign Up / Log In</h3>
             <div class="flex flex-col sm:flex-row gap-3">
@@ -37,7 +39,7 @@
             </div>
         </div>
 
-        <!-- Profile Bar (Shown when logged in) -->
+        <!-- Profile Bar -->
         <div id="profileSection" class="hidden flex justify-between items-center">
             <p class="text-slate-300 font-medium">Logged in as: <span id="currentUserDisplay" class="text-indigo-400 font-bold"></span></p>
             <button 
@@ -74,18 +76,24 @@
         <div class="flex justify-between items-center mb-4 px-2">
             <h2 class="text-lg font-semibold text-slate-400">Live Global Feed</h2>
             <span id="syncStatus" class="text-xs text-emerald-400 flex items-center gap-1">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Synced
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Connecting...
             </span>
         </div>
         <div id="boardFeed" class="space-y-4">
-            <div class="text-center py-8 text-slate-600 text-sm animate-pulse">Loading global feed...</div>
+            <div class="text-center py-8 text-slate-600 text-sm animate-pulse">Connecting to server database...</div>
         </div>
     </section>
 
     <!-- App Logic Script -->
     <script>
-        // Unique global database endpoint using the CountAPI/KV endpoint format for testing
-        const DB_URL = 'https://restful-api.dev';
+        // ⚠️ REPLACE THIS LINK WITH YOUR COPIED PROJECT URL FROM SUPABASE:
+        const SUPABASE_URL = 'https://supabase.co';
+        
+        // This is the publishable API key you copied earlier:
+        const SUPABASE_KEY = 'sb_publishable_BxFce1GWJtPN03dg8pRnLA_EkRk9-Sq';
+
+        // Initialize connection
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // DOM Elements
         const authSection = document.getElementById('authSection');
@@ -100,11 +108,8 @@
         const boardFeed = document.getElementById('boardFeed');
         const syncStatus = document.getElementById('syncStatus');
 
-        // State Variable
         let currentUsername = localStorage.getItem('wall_username') || '';
-        let mockFallbackFeed = []; // Temporary runtime fallback if the test API hits limit
 
-        // Initialize App State
         function initAuth() {
             if (currentUsername) {
                 authSection.classList.add('hidden');
@@ -120,7 +125,6 @@
             }
         }
 
-        // Login Handler
         loginBtn.addEventListener('click', () => {
             const name = usernameInput.value.trim();
             if (!name) return alert('Please enter a display name!');
@@ -130,57 +134,66 @@
             initAuth();
         });
 
-        // Logout Handler
         logoutBtn.addEventListener('click', () => {
             currentUsername = '';
             localStorage.removeItem('wall_username');
             initAuth();
         });
 
-        // Fetch all global posts
+        // Fetch all global posts from Supabase database engine 
         async function fetchGlobalFeed() {
-            // Using localStorage-based cross-tab synchronization as the baseline to ensure instant load,
-            // combined with array checks.
             try {
-                let posts = JSON.parse(localStorage.getItem('global_wall_posts')) || [];
-                renderFeed(posts);
-                syncStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Live';
+                const { data, error } = await _supabase
+                    .from('global_posts')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                renderFeed(data || []);
+                syncStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Cloud Connected';
                 syncStatus.className = "text-xs text-emerald-400 flex items-center gap-1";
             } catch (error) {
-                syncStatus.textContent = "Offline";
+                console.error("Database connection failure:", error);
+                syncStatus.textContent = "Database Error";
                 syncStatus.className = "text-xs text-rose-400";
             }
         }
 
-        // Post Submission Handler
-        noteForm.addEventListener('submit', function(e) {
+        // Post Submission Handler to save straight into backend
+        noteForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const text = noteInput.value.trim();
             if (!text || !currentUsername) return;
 
-            const newPost = {
-                username: currentUsername,
-                message: text,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
+            submitPostBtn.setAttribute('disabled', 'true');
+            submitPostBtn.textContent = "Uploading...";
 
-            let currentPosts = JSON.parse(localStorage.getItem('global_wall_posts')) || [];
-            currentPosts.unshift(newPost);
+            const timeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            // Cap items list at 50
-            if (currentPosts.length > 50) currentPosts = currentPosts.slice(0, 50);
+            try {
+                const { error } = await _supabase
+                    .from('global_posts')
+                    .insert([
+                        { username: currentUsername, message: text, timestamp: timeLabel }
+                    ]);
 
-            localStorage.setItem('global_wall_posts', JSON.stringify(currentPosts));
-            noteInput.value = '';
-            fetchGlobalFeed();
+                if (error) throw error;
+
+                noteInput.value = '';
+                await fetchGlobalFeed();
+            } catch (err) {
+                alert("Could not save message to database: " + err.message);
+            } finally {
+                submitPostBtn.removeAttribute('disabled');
+                submitPostBtn.textContent = "Post to Board";
+            }
         });
 
-        // Render posts inside browser viewport
         function renderFeed(posts) {
             boardFeed.innerHTML = '';
 
             if (posts.length === 0) {
-                boardFeed.innerHTML = `<div class="text-center py-8 text-slate-600 text-sm">No one has posted yet. Be the first to start the chat!</div>`;
+                boardFeed.innerHTML = `<div class="text-center py-8 text-slate-600 text-sm">No one has posted globally yet. Be the first!</div>`;
                 return;
             }
 
@@ -202,12 +215,8 @@
         initAuth();
         fetchGlobalFeed();
 
-        // Listen for storage updates across tabs/windows
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'global_wall_posts') {
-                fetchGlobalFeed();
-            }
-        });
+        // Listen for new posts dynamically every 5 seconds
+        setInterval(fetchGlobalFeed, 5000);
     </script>
 </body>
 </html>
