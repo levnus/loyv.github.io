@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Echo Wall</title>
-    <!-- Solid, fast-loading unstyled script layout fallback for styling -->
+    <title>Community Wall</title>
+    <!-- Tailwind CSS for sleek styling -->
     <script src="https://jsdelivr.net"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
@@ -14,15 +14,15 @@
 
     <!-- Header Section -->
     <header class="text-center my-6 max-w-xl">
-        <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400 mb-2">Global Echo Wall</h1>
-        <p class="text-sm text-slate-400">Set a display name and share messages with everyone in the world instantly.</p>
+        <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400 mb-2">Echo Wall</h1>
+        <p class="text-sm text-slate-400">Type a name, post a message, and watch it update your board instantly.</p>
     </header>
 
     <!-- Account System Container -->
     <section class="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl mb-6">
         <!-- Auth Form -->
         <div id="authSection">
-            <h3 class="text-md font-semibold text-slate-300 mb-3">Sign Up / Log In</h3>
+            <h3 class="text-md font-semibold text-slate-300 mb-3">Choose Your Handle</h3>
             <div class="flex flex-col sm:flex-row gap-3">
                 <input 
                     type="text" 
@@ -74,20 +74,17 @@
         <div class="flex justify-between items-center mb-4 px-2">
             <h2 class="text-lg font-semibold text-slate-400">Live Global Feed</h2>
             <span id="syncStatus" class="text-xs text-emerald-400 flex items-center gap-1">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Global Live
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Active Sync
             </span>
         </div>
         <div id="boardFeed" class="space-y-4">
-            <div class="text-center py-8 text-slate-600 text-sm animate-pulse">Loading global feed...</div>
+            <!-- Dynamic notes drop here -->
         </div>
     </section>
 
     <!-- App Logic Script -->
     <script>
-        // Direct global connection bucket reserved exclusively for this project group
-        const BIN_ID = '654321fedcba9876543210fe'; 
-        const DB_URL = `https://jsonbin.io{BIN_ID}`;
-
+        // DOM Elements
         const authSection = document.getElementById('authSection');
         const profileSection = document.getElementById('profileSection');
         const usernameInput = document.getElementById('usernameInput');
@@ -98,7 +95,6 @@
         const noteInput = document.getElementById('noteInput');
         const submitPostBtn = document.getElementById('submitPostBtn');
         const boardFeed = document.getElementById('boardFeed');
-        const syncStatus = document.getElementById('syncStatus');
 
         let currentUsername = localStorage.getItem('wall_username') || '';
 
@@ -132,35 +128,17 @@
             initAuth();
         });
 
-        // Pull down all global data items from the cloud
-        async function fetchGlobalFeed() {
-            try {
-                const response = await fetch(`${DB_URL}/latest`, {
-                    headers: { 'X-Master-Key': '$2b$10$Un1qu3M4st3rK3yStructu1r34567890abcdef' }
-                });
-                if (!response.ok) return;
-                
-                const result = await response.json();
-                const posts = Array.isArray(result.record) ? result.record : [];
-                renderFeed(posts);
-                
-                syncStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Cloud Active';
-                syncStatus.className = "text-xs text-emerald-400 flex items-center gap-1";
-            } catch (error) {
-                console.error("Connection lag:", error);
-                syncStatus.textContent = "Offline Connection";
-                syncStatus.className = "text-xs text-rose-400";
-            }
+        // Pulls down messages stored inside the browser cache pipeline
+        function fetchLocalFeed() {
+            const posts = JSON.parse(localStorage.getItem('shared_wall_posts')) || [];
+            renderFeed(posts);
         }
 
-        // Upload your message array object straight to the server stack
-        noteForm.addEventListener('submit', async function(e) {
+        // Appends your message text inside the array sequence
+        noteForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const text = noteInput.value.trim();
             if (!text || !currentUsername) return;
-
-            submitPostBtn.setAttribute('disabled', 'true');
-            submitPostBtn.textContent = "Sending...";
 
             const newPost = {
                 username: currentUsername,
@@ -168,51 +146,49 @@
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
 
-            try {
-                // Get the current list stack
-                const response = await fetch(`${DB_URL}/latest`, {
-                    headers: { 'X-Master-Key': '$2b$10$Un1qu3M4st3rK3yStructu1r34567890abcdef' }
-                });
-                let currentPosts = [];
-                if (response.ok) {
-                    const result = await response.json();
-                    currentPosts = Array.isArray(result.record) ? result.record : [];
-                }
+            let currentPosts = JSON.parse(localStorage.getItem('shared_wall_posts')) || [];
+            currentPosts.unshift(newPost);
 
-                // Add the new post straight to the top of the timeline array
-                currentPosts.unshift(newPost);
-                if (currentPosts.length > 40) currentPosts = currentPosts.slice(0, 40);
+            // Cap layout entries list structure at 40 rows
+            if (currentPosts.length > 40) currentPosts = currentPosts.slice(0, 40);
 
-                // Re-upload the whole updated feed stack list back up to the server box
-                await fetch(DB_URL, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': '$2b$10$Un1qu3M4st3rK3yStructu1r34567890abcdef'
-                    },
-                    body: JSON.stringify(currentPosts)
-                });
-
-                noteInput.value = '';
-                await fetchGlobalFeed();
-            } catch (err) {
-                alert("Server busy, trying to resend text block...");
-            } finally {
-                submitPostBtn.removeAttribute('disabled');
-                submitPostBtn.textContent = "Post to Board";
-            }
+            localStorage.setItem('shared_wall_posts', JSON.stringify(currentPosts));
+            noteInput.value = '';
+            fetchLocalFeed();
         });
 
         function renderFeed(posts) {
             boardFeed.innerHTML = '';
 
             if (posts.length === 0) {
-                boardFeed.innerHTML = `<div class="text-center py-8 text-slate-600 text-sm">No one has posted globally yet. Be the first to start the wall!</div>`;
+                boardFeed.innerHTML = `<div class="text-center py-8 text-slate-600 text-sm">No posts yet. Write something to start the wall!</div>`;
                 return;
             }
 
             posts.forEach(post => {
                 const card = document.createElement('div');
-                card.className = "bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md transition-all hover:border-slate-700";
+                card.className = "bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md transition-all hover:border-slate-700 animate-fade-in";
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
+                        <span class="text-indigo-400 font-bold text-sm">@${post.username}</span>
+                        <span class="text-[10px] text-slate-500">${post.timestamp}</span>
+                    </div>
+                    <p class="text-slate-200 text-sm leading-relaxed">${post.message}</p>
+                `;
+                boardFeed.appendChild(card);
+            });
+        }
+
+        // Run initializations
+        initAuth();
+        fetchLocalFeed();
+
+        // Listen for data storage changes across multiple open tabs / browser frames
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'shared_wall_posts') {
+                fetchLocalFeed();
+            }
+        });
+    </script>
+</body>
+</html>
