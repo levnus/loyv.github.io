@@ -154,7 +154,10 @@
   <section>
     <div class="flex justify-between items-center mb-3 px-1">
       <h2 class="text-xl font-bold">The Wall</h2>
-      <button id="refreshBtn" class="action">↻ Refresh</button>
+      <div class="flex gap-2">
+        <button id="savedToggleBtn" class="action">☆ Saved</button>
+        <button id="refreshBtn" class="action">↻ Refresh</button>
+      </div>
     </div>
 
     <input
@@ -210,6 +213,38 @@
   let allLikes = [];
   let channel = null;
   let loading = false;
+  let showSavedOnly = false;
+  const SAVED_POSTS_KEY = "echoWallSavedPosts";
+  let savedPostIds = new Set(JSON.parse(localStorage.getItem(SAVED_POSTS_KEY) || "[]"));
+
+  function saveSavedPosts() {
+    localStorage.setItem(SAVED_POSTS_KEY, JSON.stringify([...savedPostIds]));
+  }
+
+  function isSaved(postId) {
+    return savedPostIds.has(String(postId));
+  }
+
+  function toggleSaved(postId) {
+    const key = String(postId);
+    if (savedPostIds.has(key)) {
+      savedPostIds.delete(key);
+    } else {
+      savedPostIds.add(key);
+    }
+    saveSavedPosts();
+    renderFeed();
+    if (!$("profileView").classList.contains("hidden")) {
+      const profileId = $("profileView").dataset.userId;
+      if (profileId) renderProfilePosts(profileId);
+    }
+  }
+
+  function updateSavedToggleBtn() {
+    const button = $("savedToggleBtn");
+    if (!button) return;
+    button.textContent = showSavedOnly ? "★ Saved only" : "☆ Saved";
+  }
 
   function setStatus(message, good = false) {
     $("status").textContent = message;
@@ -248,7 +283,6 @@
     return true;
   }
 
-  // B button: wrap selected text in bold markers.
   const boldBtn = $("boldBtn");
   if (boldBtn) {
     boldBtn.addEventListener("click", () => {
@@ -267,7 +301,6 @@
     });
   }
 
-  // Safely render **bold text** without allowing HTML injection.
   function appendFormattedText(element, text) {
     const parts = String(text || "").split(/(\*\*[\s\S]+?\*\*)/g);
 
@@ -382,37 +415,36 @@
     return button;
   }
 
-function timeLeftText(createdAt) {
-  const expiresAt = new Date(createdAt).getTime() + 24 * 60 * 60 * 1000;
-  const remaining = expiresAt - Date.now();
+  function timeLeftText(createdAt) {
+    const expiresAt = new Date(createdAt).getTime() + 24 * 60 * 60 * 1000;
+    const remaining = expiresAt - Date.now();
 
-  if (remaining <= 0) return "Expired";
-
-  const hours = Math.floor(remaining / (1000 * 60 * 60));
-  const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-
-  return `⏳ ${hours}h ${minutes}m left`;
-}
-  function updateCountdowns() {
-  document.querySelectorAll("[data-expires-at]").forEach(countdown => {
-    const remaining = Number(countdown.dataset.expiresAt) - Date.now();
-
-    if (remaining <= 0) {
-      countdown.textContent = "⏳ Expired";
-      return;
-    }
+    if (remaining <= 0) return "Expired";
 
     const hours = Math.floor(remaining / (1000 * 60 * 60));
-    const minutes = Math.floor(
-      (remaining % (1000 * 60 * 60)) / (1000 * 60)
-    );
+    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
 
-    countdown.textContent = `⏳ ${hours}h ${minutes}m left`;
-  });
-}
+    return `⏳ ${hours}h ${minutes}m left`;
+  }
 
-setInterval(updateCountdowns, 60 * 1000);
-  
+  function updateCountdowns() {
+    document.querySelectorAll("[data-expires-at]").forEach(countdown => {
+      const remaining = Number(countdown.dataset.expiresAt) - Date.now();
+
+      if (remaining <= 0) {
+        countdown.textContent = "⏳ Expired";
+        return;
+      }
+
+      const hours = Math.floor(remaining / (1000 * 60 * 60));
+      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+
+      countdown.textContent = `⏳ ${hours}h ${minutes}m left`;
+    });
+  }
+
+  setInterval(updateCountdowns, 60 * 1000);
+
   function renderPost(post, isReply = false) {
     const card = make("article", "wall-card");
     if (isReply) card.classList.add("reply-card");
@@ -428,12 +460,10 @@ setInterval(updateCountdowns, 60 * 1000);
     author.append(authorName);
     author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
 
-const countdown = make("p", "muted text-xs mt-1", timeLeftText(post.created_at));
-countdown.dataset.expiresAt =
-  new Date(post.created_at).getTime() + 24 * 60 * 60 * 1000;
-
-author.append(countdown);
-top.append(author);
+    const countdown = make("p", "muted text-xs mt-1", timeLeftText(post.created_at));
+    countdown.dataset.expiresAt = new Date(post.created_at).getTime() + 24 * 60 * 60 * 1000;
+    author.append(countdown);
+    top.append(author);
 
     if (post.user_id && post.user_id === currentUser?.id) {
       top.append(make("span", "text-xs text-emerald-400", "You"));
@@ -495,7 +525,12 @@ top.append(author);
 
     actions.append(likeBtn);
 
-    // Delete button for your own posts and replies.
+    const saveBtn = make("button", "action", isSaved(post.id) ? "★ Saved" : "☆ Save");
+    saveBtn.addEventListener("click", () => {
+      toggleSaved(post.id);
+    });
+    actions.append(saveBtn);
+
     if (post.user_id && post.user_id === currentUser?.id) {
       const deleteBtn = make("button", "action text-rose-400", "🗑 Delete");
 
@@ -605,8 +640,7 @@ top.append(author);
       });
 
       const replies = allPosts
-        .filter(p => p.parent_post_id != null &&
-          String(p.parent_post_id) === String(post.id))
+        .filter(p => p.parent_post_id != null && String(p.parent_post_id) === String(post.id))
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
       if (replies.length) {
@@ -627,6 +661,7 @@ top.append(author);
 
     const posts = allPosts.filter(post => {
       if (post.parent_post_id != null) return false;
+      if (showSavedOnly && !isSaved(post.id)) return false;
 
       const profile = getProfile(post.user_id);
       const username = profile?.username || post.username || "";
@@ -641,7 +676,9 @@ top.append(author);
       feed.append(make(
         "div",
         "wall-card muted text-sm text-center",
-        query ? "No posts match your search." : "No posts yet. Be the first to publish!"
+        showSavedOnly
+          ? "No saved posts yet."
+          : (query ? "No posts match your search." : "No posts yet. Be the first to publish!")
       ));
       return;
     }
@@ -653,9 +690,7 @@ top.append(author);
     const list = $("profilePosts");
     list.replaceChildren();
 
-    const posts = allPosts.filter(p =>
-      p.user_id === userId && p.parent_post_id == null
-    );
+    const posts = allPosts.filter(p => p.user_id === userId && p.parent_post_id == null);
 
     if (!posts.length) {
       list.append(make("p", "muted text-sm", "No posts yet."));
@@ -891,6 +926,12 @@ top.append(author);
     renderFeed();
   });
 
+  $("savedToggleBtn").addEventListener("click", () => {
+    showSavedOnly = !showSavedOnly;
+    updateSavedToggleBtn();
+    renderFeed();
+  });
+
   $("refreshBtn").addEventListener("click", async () => {
     const button = $("refreshBtn");
     button.disabled = true;
@@ -960,8 +1001,7 @@ top.append(author);
     }
   }
 
-  // Persistent timer with 10-minute inactivity reset.
-  const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+  const INACTIVITY_TIMEOUT = 10 * 60 * 1000;
   const TIMER_STORAGE_KEY = "echoWallTimerState";
 
   function getTimerState() {
@@ -971,7 +1011,6 @@ top.append(author);
     const state = JSON.parse(stored);
     const timeSinceLastActive = Date.now() - state.lastActiveTime;
 
-    // If inactive for 10 minutes, reset the timer
     if (timeSinceLastActive > INACTIVITY_TIMEOUT) {
       return { totalSeconds: 0, lastActiveTime: Date.now() };
     }
@@ -988,35 +1027,29 @@ top.append(author);
   }
 
   let timerState = getTimerState();
-  let timerIntervalId = null;
 
   function updateSiteTimer() {
     const elapsed = timerState.totalSeconds;
-
     const hours = Math.floor(elapsed / 3600);
     const minutes = Math.floor((elapsed % 3600) / 60);
     const seconds = elapsed % 60;
-
     const format = n => String(n).padStart(2, "0");
     const timer = $("siteTimer");
 
     if (timer) {
-      timer.textContent =
-        `${format(hours)}:${format(minutes)}:${format(seconds)}`;
+      timer.textContent = `${format(hours)}:${format(minutes)}:${format(seconds)}`;
     }
   }
 
   function startTimer() {
     updateSiteTimer();
-
-    timerIntervalId = setInterval(() => {
+    setInterval(() => {
       timerState.totalSeconds++;
       saveTimerState(timerState.totalSeconds);
       updateSiteTimer();
     }, 1000);
   }
 
-  // Track page activity to update last active time
   function trackActivity() {
     timerState.lastActiveTime = Date.now();
     saveTimerState(timerState.totalSeconds);
@@ -1026,8 +1059,8 @@ top.append(author);
   document.addEventListener("keypress", trackActivity);
   document.addEventListener("click", trackActivity);
 
+  updateSavedToggleBtn();
   start();
-
   startTimer();
 })();
 </script>
