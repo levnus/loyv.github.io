@@ -101,6 +101,10 @@
       <div class="min-w-0 flex-1">
         <div id="myUsername" class="font-bold text-lg break-words"></div>
         <p id="myBio" class="muted text-sm mt-1 whitespace-pre-wrap break-words"></p>
+        <div class="mt-3">
+  <p class="muted text-xs">⏱️ Time on Echo Wall</p>
+  <p id="siteTimer" class="text-indigo-300 font-bold text-lg">00:00:00</p>
+</div>
         <button id="viewMyProfileBtn" class="text-indigo-300 text-sm mt-2">View my profile →</button>
       </div>
     </div>
@@ -945,6 +949,26 @@ top.append(author);
 
   start();
 })();
+  const siteVisitStartedAt = Date.now();
+
+function updateSiteTimer() {
+  const elapsed = Math.floor((Date.now() - siteVisitStartedAt) / 1000);
+
+  const hours = Math.floor(elapsed / 3600);
+  const minutes = Math.floor((elapsed % 3600) / 60);
+  const seconds = elapsed % 60;
+
+  const format = n => String(n).padStart(2, "0");
+
+  const timer = $("siteTimer");
+  if (timer) {
+    timer.textContent =
+      `${format(hours)}:${format(minutes)}:${format(seconds)}`;
+  }
+}
+
+updateSiteTimer();
+setInterval(updateSiteTimer, 1000);
 </script>
 </body>
 </html>
