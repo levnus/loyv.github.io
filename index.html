@@ -169,7 +169,7 @@
 
   function renderMyProfile() {
     if (!myProfile) return;
-    $("myUsername").textContent = "@" + myProfile.username;
+    $("myUsername").textContent = &#64; + myProfile.username;
     $("myBio").textContent = myProfile.bio || "No bio yet.";
     $("myAvatar").textContent = myProfile.username.slice(0, 1).toUpperCase();
     $("editUsername").value = myProfile.username;
