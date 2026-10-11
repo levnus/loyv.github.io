@@ -374,6 +374,18 @@
     return button;
   }
 
+function timeLeftText(createdAt) {
+  const expiresAt = new Date(createdAt).getTime() + 24 * 60 * 60 * 1000;
+  const remaining = expiresAt - Date.now();
+
+  if (remaining <= 0) return "Expired";
+
+  const hours = Math.floor(remaining / (1000 * 60 * 60));
+  const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+
+  return `⏳ ${hours}h ${minutes}m left`;
+}
+  
   function renderPost(post, isReply = false) {
     const card = make("article", "wall-card");
     if (isReply) card.classList.add("reply-card");
@@ -382,8 +394,14 @@
     const author = make("div", "min-w-0");
 
     author.append(profileButton(post.user_id, post.username));
-    author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
-    top.append(author);
+author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
+
+const countdown = make("p", "muted text-xs mt-1", timeLeftText(post.created_at));
+countdown.dataset.expiresAt =
+  new Date(post.created_at).getTime() + 24 * 60 * 60 * 1000;
+
+author.append(countdown);
+top.append(author);
 
     if (post.user_id && post.user_id === currentUser?.id) {
       top.append(make("span", "text-xs text-emerald-400", "You"));
