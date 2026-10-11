@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,10 +9,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { background:#0f172a; color:#f8fafc; }
-    input, textarea { color-scheme: dark; }
+    input, textarea { color-scheme:dark; }
     .wall-card { background:#111c30; border:1px solid #26334a; border-radius:16px; padding:16px; }
     .muted { color:#94a3b8; }
-    .action { background:#1e293b; border:1px solid #334155; border-radius:10px; padding:7px 11px; font-size:13px; }
+    .action { background:#1e293b; border:1px solid #334155; border-radius:10px; padding:8px 12px; font-size:13px; }
     .action:hover { background:#334155; }
     .primary { background:#4f46e5; border-radius:10px; padding:10px 15px; font-weight:600; }
     .primary:hover { background:#6366f1; }
@@ -19,117 +20,112 @@
     .field:focus { border-color:#818cf8; }
     .post-image { display:block; width:100%; max-height:420px; object-fit:contain; background:#020617; border-radius:12px; margin-top:12px; }
     button:disabled { opacity:.5; cursor:not-allowed; }
+    .hidden { display:none !important; }
   </style>
 </head>
-
 <body class="min-h-screen">
-  <header class="max-w-2xl mx-auto px-4 pt-8 pb-5">
-    <div class="flex items-center justify-between gap-3">
-      <div>
-        <h1 class="text-4xl font-black tracking-tight text-indigo-400">Echo Wall</h1>
-        <p class="muted text-sm mt-1">Your corner of the internet.</p>
-      </div>
-      <button id="editProfileBtn" class="action hidden">Edit profile</button>
+<header class="max-w-2xl mx-auto px-4 pt-8 pb-5">
+  <div class="flex items-center justify-between gap-3">
+    <div>
+      <h1 class="text-4xl font-black tracking-tight text-indigo-400">Echo Wall</h1>
+      <p class="muted text-sm mt-1">Your corner of the internet.</p>
     </div>
-    <p id="status" class="text-xs muted mt-3">Connecting to Echo Wall...</p>
-  </header>
+    <button id="editProfileBtn" class="action hidden">Edit profile</button>
+  </div>
+  <p id="status" class="text-xs muted mt-3">Connecting...</p>
+</header>
 
-  <main class="max-w-2xl mx-auto px-4 pb-12 space-y-5">
-    <!-- First-time profile setup -->
-    <section id="setupPanel" class="wall-card hidden">
-      <h2 class="text-xl font-bold mb-1">Welcome to Echo Wall 👋</h2>
-      <p class="muted text-sm mb-4">Choose a username to get started. No email needed.</p>
-      <form id="setupForm" class="space-y-3">
-        <input id="setupUsername" class="field" maxlength="30" minlength="2"
-          placeholder="Username (2–30 characters)" required>
-        <textarea id="setupBio" class="field" maxlength="160" rows="2"
-          placeholder="A short bio (optional, up to 160 characters)"></textarea>
-        <button class="primary w-full" type="submit">Create my profile</button>
-      </form>
-    </section>
+<main class="max-w-2xl mx-auto px-4 pb-12 space-y-5">
+  <section id="setupPanel" class="wall-card hidden">
+    <h2 class="text-xl font-bold mb-1">Welcome to Echo Wall 👋</h2>
+    <p class="muted text-sm mb-4">Choose a username. No email needed.</p>
+    <form id="setupForm" class="space-y-3">
+      <input id="setupUsername" class="field" minlength="2" maxlength="30"
+        placeholder="Username (2–30 characters)" required>
+      <textarea id="setupBio" class="field" maxlength="160" rows="2"
+        placeholder="Short bio (optional)"></textarea>
+      <button class="primary w-full" type="submit">Create my profile</button>
+    </form>
+  </section>
 
-    <!-- Current profile summary -->
-    <section id="myProfile" class="wall-card hidden">
-      <div class="flex items-start gap-3">
-        <div id="myAvatar" class="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center text-xl font-bold">?</div>
-        <div class="min-w-0 flex-1">
-          <div id="myUsername" class="font-bold text-lg break-words"></div>
-          <p id="myBio" class="muted text-sm mt-1 whitespace-pre-wrap break-words"></p>
-          <button id="viewMyProfileBtn" class="text-indigo-300 text-sm mt-2">View my profile →</button>
-        </div>
+  <section id="myProfile" class="wall-card hidden">
+    <div class="flex items-start gap-3">
+      <div id="myAvatar" class="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center text-xl font-bold">?</div>
+      <div class="min-w-0 flex-1">
+        <div id="myUsername" class="font-bold text-lg break-words"></div>
+        <p id="myBio" class="muted text-sm mt-1 whitespace-pre-wrap break-words"></p>
+        <button id="viewMyProfileBtn" class="text-indigo-300 text-sm mt-2">View my profile →</button>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- New post -->
-    <section id="composer" class="wall-card hidden">
-      <h2 class="font-semibold mb-3">What's on your mind?</h2>
-      <form id="postForm" class="space-y-3">
-        <textarea id="postMessage" class="field" maxlength="250" rows="3"
-          placeholder="Write something for the wall..." required></textarea>
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <label class="action cursor-pointer">
-            📷 Add image
-            <input id="postImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden">
-          </label>
-          <span id="imageLabel" class="muted text-xs">Images up to 5 MB</span>
-        </div>
-        <img id="imagePreview" class="hidden max-h-56 rounded-xl object-contain" alt="Image preview">
-        <button id="publishBtn" type="submit" class="primary w-full">Publish to Echo Wall</button>
-      </form>
-    </section>
-
-    <!-- Public profile view -->
-    <section id="profileView" class="wall-card hidden">
-      <div class="flex justify-between items-start gap-3">
-        <div class="min-w-0">
-          <h2 id="profileViewName" class="text-xl font-bold break-words"></h2>
-          <p id="profileViewBio" class="muted text-sm mt-2 whitespace-pre-wrap break-words"></p>
-        </div>
-        <button id="closeProfileBtn" class="action">Close</button>
+  <section id="composer" class="wall-card hidden">
+    <h2 class="font-semibold mb-3">What's on your mind?</h2>
+    <form id="postForm" class="space-y-3">
+      <textarea id="postMessage" class="field" maxlength="250" rows="3"
+        placeholder="Write something..." required></textarea>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <label class="action cursor-pointer">
+          📷 Add image
+          <input id="postImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden">
+        </label>
+        <span id="imageLabel" class="muted text-xs">Images up to 5 MB</span>
       </div>
-      <h3 class="font-semibold mt-5 mb-3">Posts</h3>
-      <div id="profilePosts" class="space-y-3"></div>
-    </section>
+      <img id="imagePreview" class="hidden max-h-56 rounded-xl object-contain" alt="Image preview">
+      <button id="publishBtn" class="primary w-full" type="submit">Publish to Echo Wall</button>
+    </form>
+  </section>
 
-    <!-- Feed -->
-    <section>
-      <div class="flex justify-between items-center mb-3 px-1">
-        <h2 class="text-xl font-bold">The Wall</h2>
-        <button id="refreshBtn" class="action">↻ Refresh</button>
+  <section id="profileView" class="wall-card hidden">
+    <div class="flex justify-between items-start gap-3">
+      <div class="min-w-0">
+        <h2 id="profileViewName" class="text-xl font-bold break-words"></h2>
+        <p id="profileViewBio" class="muted text-sm mt-2 whitespace-pre-wrap break-words"></p>
       </div>
-      <div id="feed" class="space-y-4">
-        <div class="wall-card muted text-sm text-center">Loading posts...</div>
-      </div>
-    </section>
+      <button id="closeProfileBtn" class="action">Close</button>
+    </div>
+    <h3 class="font-semibold mt-5 mb-3">Posts</h3>
+    <div id="profilePosts" class="space-y-3"></div>
+  </section>
 
-    <!-- Edit profile dialog -->
-    <section id="editPanel" class="wall-card hidden">
-      <h2 class="text-xl font-bold mb-1">Edit your profile</h2>
-      <p class="muted text-sm mb-4">Your changes will appear on your profile and existing posts.</p>
-      <form id="editForm" class="space-y-3">
-        <label class="block text-sm muted">Username</label>
-        <input id="editUsername" class="field" maxlength="30" minlength="2" required>
-        <label class="block text-sm muted">Short bio</label>
-        <textarea id="editBio" class="field" maxlength="160" rows="3"
-          placeholder="Tell people a little about yourself"></textarea>
-        <div class="flex gap-2">
-          <button type="submit" class="primary flex-1">Save changes</button>
-          <button type="button" id="cancelEditBtn" class="action">Cancel</button>
-        </div>
-      </form>
-    </section>
-  </main>
+  <section>
+    <div class="flex justify-between items-center mb-3 px-1">
+      <h2 class="text-xl font-bold">The Wall</h2>
+      <button id="refreshBtn" class="action">↻ Refresh</button>
+    </div>
+    <div id="feed" class="space-y-4">
+      <div class="wall-card muted text-sm text-center">Loading posts...</div>
+    </div>
+  </section>
+
+  <section id="editPanel" class="wall-card hidden">
+    <h2 class="text-xl font-bold mb-1">Edit your profile</h2>
+    <form id="editForm" class="space-y-3 mt-4">
+      <label class="block text-sm muted">Username</label>
+      <input id="editUsername" class="field" minlength="2" maxlength="30" required>
+      <label class="block text-sm muted">Short bio</label>
+      <textarea id="editBio" class="field" maxlength="160" rows="3"></textarea>
+      <div class="flex gap-2">
+        <button type="submit" class="primary flex-1">Save changes</button>
+        <button type="button" id="cancelEditBtn" class="action">Cancel</button>
+      </div>
+    </form>
+  </section>
+</main>
 
 <script>
 (() => {
   "use strict";
 
   const SUPABASE_URL = "https://qdncdhvhuhlwrksrxmeq.supabase.co";
-
-  // Use the publishable key from your Supabase project's API Keys page.
   const SUPABASE_KEY = "sb_publishable_BxFce1GWJtPN03dg8pRnLA_EkRk9-Sq";
+  const $ = id => document.getElementById(id);
 
-  const $ = (id) => document.getElementById(id);
+  if (!window.supabase) {
+    $("status").textContent = "Supabase failed to load. Check your connection.";
+    return;
+  }
+
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   let currentUser = null;
   let myProfile = null;
@@ -137,34 +133,31 @@
   let allPosts = [];
   let allProfiles = [];
   let allLikes = [];
+  let channel = null;
 
-  function status(message, good = false) {
+  function setStatus(message, good = false) {
     $("status").textContent = message;
     $("status").className = "text-xs mt-3 " + (good ? "text-emerald-400" : "muted");
   }
 
-  function show(id, yes = true) {
-    $(id).classList.toggle("hidden", !yes);
+  function show(id, visible = true) {
+    $(id).classList.toggle("hidden", !visible);
   }
 
-  function safeText(value) {
-    return String(value ?? "");
-  }
-
-  function make(tag, className, content) {
+  function make(tag, className = "", text) {
     const el = document.createElement(tag);
     if (className) el.className = className;
-    if (content !== undefined) el.textContent = content;
+    if (text !== undefined) el.textContent = String(text);
     return el;
+  }
+
+  function getProfile(userId) {
+    return allProfiles.find(p => p.user_id === userId) || null;
   }
 
   function dateText(value) {
     const d = new Date(value);
     return Number.isNaN(d.getTime()) ? "" : d.toLocaleString();
-  }
-
-  function getProfile(userId) {
-    return allProfiles.find(p => p.user_id === userId) || null;
   }
 
   function renderMyProfile() {
@@ -192,10 +185,11 @@
       currentUser = data.user;
     }
 
-    if (!currentUser) throw new Error("Could not create your anonymous account.");
+    if (!currentUser?.id) {
+      throw new Error("No user session was created. Check that Anonymous Sign-ins are enabled in Supabase Authentication.");
+    }
 
-    const { data: profile, error } = await db
-      .from("profiles")
+    const { data: profile, error } = await db.from("profiles")
       .select("user_id, username, bio, created_at")
       .eq("user_id", currentUser.id)
       .maybeSingle();
@@ -205,15 +199,15 @@
     if (profile) {
       myProfile = profile;
       renderMyProfile();
-      status("Connected · public live wall", true);
+      setStatus("Connected · public wall", true);
     } else {
       show("setupPanel");
-      status("Choose a username to finish setting up.");
+      setStatus("Choose a username to finish setting up.");
     }
   }
 
   async function refreshData() {
-    const [postsResult, profilesResult, likesResult] = await Promise.all([
+    const [postsRes, profilesRes, likesRes] = await Promise.all([
       db.from("posts")
         .select("id, user_id, username, message, created_at, parent_post_id, image_url")
         .order("created_at", { ascending: false })
@@ -222,24 +216,25 @@
       db.from("likes").select("post_id, user_id")
     ]);
 
-    if (postsResult.error) throw postsResult.error;
-    if (profilesResult.error) throw profilesResult.error;
-    if (likesResult.error) throw likesResult.error;
+    if (postsRes.error) throw postsRes.error;
+    if (profilesRes.error) throw profilesRes.error;
+    if (likesRes.error) throw likesRes.error;
 
-    allPosts = postsResult.data || [];
-    allProfiles = profilesResult.data || [];
-    allLikes = likesResult.data || [];
+    allPosts = postsRes.data || [];
+    allProfiles = profilesRes.data || [];
+    allLikes = likesRes.data || [];
     renderFeed();
   }
 
   function profileButton(userId, fallbackName) {
+    const profile = getProfile(userId);
     const button = make("button", "text-indigo-300 font-semibold text-sm hover:underline",
-      "@" + (getProfile(userId)?.username || fallbackName || "former user"));
+      "@" + (profile?.username || fallbackName || "user"));
+
     if (userId) {
       button.addEventListener("click", () => openProfile(userId));
     } else {
       button.disabled = true;
-      button.classList.add("opacity-60");
     }
     return button;
   }
@@ -249,22 +244,16 @@
     if (isReply) card.classList.add("ml-3");
 
     const top = make("div", "flex justify-between items-start gap-3");
-    const authorArea = make("div", "min-w-0");
-    authorArea.append(profileButton(post.user_id, post.username));
+    const author = make("div", "min-w-0");
+    author.append(profileButton(post.user_id, post.username));
+    author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
+    top.append(author);
 
-    const timestamp = make("p", "muted text-xs mt-1", dateText(post.created_at));
-    authorArea.append(timestamp);
-    top.append(authorArea);
-
-    if (post.user_id === currentUser?.id) {
-      const mine = make("span", "text-xs text-emerald-400", "You");
-      top.append(mine);
+    if (post.user_id && post.user_id === currentUser?.id) {
+      top.append(make("span", "text-xs text-emerald-400", "You"));
     }
     card.append(top);
-
-    const message = make("p", "text-sm mt-3 whitespace-pre-wrap break-words",
-      safeText(post.message));
-    card.append(message);
+    card.append(make("p", "text-sm mt-3 whitespace-pre-wrap break-words", post.message || ""));
 
     if (post.image_url) {
       const img = make("img", "post-image");
@@ -279,13 +268,19 @@
     const liked = likeRows.some(l => l.user_id === currentUser?.id);
     const actions = make("div", "flex flex-wrap items-center gap-2 mt-4");
 
-    const likeBtn = make("button", "action", (liked ? "♥" : "♡") + " Like · " + likeRows.length);
+    const likeBtn = make("button", "action",
+      (liked ? "♥" : "♡") + " Like · " + likeRows.length);
+
     likeBtn.addEventListener("click", async () => {
+      if (!currentUser?.id) {
+        alert("Your session is missing. Refresh the page and try again.");
+        return;
+      }
+
       likeBtn.disabled = true;
       try {
         if (liked) {
-          const { error } = await db.from("likes")
-            .delete()
+          const { error } = await db.from("likes").delete()
             .eq("post_id", post.id)
             .eq("user_id", currentUser.id);
           if (error) throw error;
@@ -303,13 +298,17 @@
         likeBtn.disabled = false;
       }
     });
+
     actions.append(likeBtn);
 
     if (!isReply) {
       const replyBtn = make("button", "action", "↩ Reply");
       actions.append(replyBtn);
-      card.append(actions);
+    }
 
+    card.append(actions);
+
+    if (!isReply) {
       const replyArea = make("div", "hidden mt-3");
       const replyForm = make("form", "space-y-2");
       const replyInput = make("textarea", "field");
@@ -322,8 +321,14 @@
       replySubmit.type = "submit";
       replyForm.append(replyInput, replySubmit);
 
-      replyForm.addEventListener("submit", async (event) => {
+      replyForm.addEventListener("submit", async event => {
         event.preventDefault();
+
+        if (!currentUser?.id || !myProfile) {
+          alert("Your session or profile is missing. Refresh the page and try again.");
+          return;
+        }
+
         const text = replyInput.value.trim();
         if (!text) return;
 
@@ -336,6 +341,7 @@
             parent_post_id: post.id
           });
           if (error) throw error;
+
           replyInput.value = "";
           await refreshData();
         } catch (err) {
@@ -346,11 +352,13 @@
       });
 
       replyArea.append(replyForm);
+      card.append(replyArea);
+
+      const replyBtn = actions.querySelector("button:nth-child(2)");
       replyBtn.addEventListener("click", () => {
         replyArea.classList.toggle("hidden");
         if (!replyArea.classList.contains("hidden")) replyInput.focus();
       });
-      card.append(replyArea);
 
       const replies = allPosts
         .filter(p => String(p.parent_post_id) === String(post.id))
@@ -361,8 +369,6 @@
         replies.forEach(reply => repliesBox.append(renderPost(reply, true)));
         card.append(repliesBox);
       }
-    } else {
-      card.append(actions);
     }
 
     return card;
@@ -372,92 +378,97 @@
     const feed = $("feed");
     feed.replaceChildren();
 
-    const topLevelPosts = allPosts.filter(p => !p.parent_post_id);
-    if (!topLevelPosts.length) {
+    const posts = allPosts.filter(p => !p.parent_post_id);
+    if (!posts.length) {
       feed.append(make("div", "wall-card muted text-sm text-center",
         "No posts yet. Be the first to publish!"));
       return;
     }
-
-    topLevelPosts.forEach(post => feed.append(renderPost(post)));
+    posts.forEach(post => feed.append(renderPost(post)));
   }
 
   async function openProfile(userId) {
-    try {
-      const profile = getProfile(userId);
-      if (!profile) {
-        alert("This profile is unavailable.");
-        return;
-      }
-
-      $("profileViewName").textContent = "@" + profile.username;
-      $("profileViewBio").textContent = profile.bio || "No bio yet.";
-      const list = $("profilePosts");
-      list.replaceChildren();
-
-      const posts = allPosts.filter(p => p.user_id === userId && !p.parent_post_id);
-      if (!posts.length) {
-        list.append(make("p", "muted text-sm", "No posts yet."));
-      } else {
-        posts.forEach(p => list.append(renderPost(p)));
-      }
-
-      show("profileView");
-      $("profileView").scrollIntoView({ behavior: "smooth", block: "start" });
-    } catch (err) {
-      alert("Couldn't open profile: " + err.message);
+    const profile = getProfile(userId);
+    if (!profile) {
+      alert("This profile is unavailable.");
+      return;
     }
+
+    $("profileViewName").textContent = "@" + profile.username;
+    $("profileViewBio").textContent = profile.bio || "No bio yet.";
+
+    const list = $("profilePosts");
+    list.replaceChildren();
+
+    const posts = allPosts.filter(p =>
+      p.user_id === userId && !p.parent_post_id
+    );
+
+    if (!posts.length) {
+      list.append(make("p", "muted text-sm", "No posts yet."));
+    } else {
+      posts.forEach(post => list.append(renderPost(post)));
+    }
+
+    show("profileView");
+    $("profileView").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  $("setupForm").addEventListener("submit", async (event) => {
+  $("setupForm").addEventListener("submit", async event => {
     event.preventDefault();
+    if (!currentUser?.id) {
+      alert("Your session is missing. Refresh and try again.");
+      return;
+    }
+
     const username = $("setupUsername").value.trim();
     const bio = $("setupBio").value.trim();
 
     if (username.length < 2 || username.length > 30) {
-      alert("Your username must be between 2 and 30 characters.");
+      alert("Username must be 2–30 characters.");
       return;
     }
 
     const button = $("setupForm").querySelector("button");
     button.disabled = true;
+
     try {
       const { data, error } = await db.from("profiles").insert({
-        user_id: currentUser.id,
-        username,
-        bio
+        user_id: currentUser.id, username, bio
       }).select().single();
 
       if (error) throw error;
       myProfile = data;
       renderMyProfile();
       await refreshData();
-      status("Your profile is ready!", true);
+      startRealtime();
+      setStatus("Your profile is ready!", true);
     } catch (err) {
-      if (err.code === "23505") {
-        alert("That username is already taken. Please choose another.");
-      } else {
-        alert("Couldn't create your profile: " + err.message);
-      }
+      alert(err.code === "23505"
+        ? "That username is already taken."
+        : "Couldn't create profile: " + err.message);
     } finally {
       button.disabled = false;
     }
   });
 
   $("postImage").addEventListener("change", () => {
-    const file = $("postImage").files[0];
-    selectedImage = file || null;
+    const file = $("postImage").files[0] || null;
+    selectedImage = file;
     $("imagePreview").classList.add("hidden");
     $("imageLabel").textContent = file ? file.name : "Images up to 5 MB";
 
     if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+
+    const types = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!types.includes(file.type)) {
       alert("Choose a JPG, PNG, WEBP, or GIF image.");
       $("postImage").value = "";
       selectedImage = null;
       $("imageLabel").textContent = "Images up to 5 MB";
       return;
     }
+
     if (file.size > 5 * 1024 * 1024) {
       alert("Images must be 5 MB or smaller.");
       $("postImage").value = "";
@@ -466,17 +477,21 @@
       return;
     }
 
-    const preview = $("imagePreview");
-    preview.src = URL.createObjectURL(file);
-    preview.classList.remove("hidden");
+    $("imagePreview").src = URL.createObjectURL(file);
+    $("imagePreview").classList.remove("hidden");
   });
 
-  $("postForm").addEventListener("submit", async (event) => {
+  $("postForm").addEventListener("submit", async event => {
     event.preventDefault();
-    const message = $("postMessage").value.trim();
 
-    if (!message) {
-      alert("Write a message before publishing.");
+    if (!currentUser?.id || !myProfile) {
+      alert("Your session or profile is missing. Refresh and try again.");
+      return;
+    }
+
+    const message = $("postMessage").value.trim();
+    if (!message && !selectedImage) {
+      alert("Write a message or choose an image.");
       return;
     }
 
@@ -490,29 +505,22 @@
       if (selectedImage) {
         const ext = selectedImage.name.split(".").pop().toLowerCase();
         const path = currentUser.id + "/" + crypto.randomUUID() + "." + ext;
-        const { error: uploadError } = await db.storage
-          .from("echo-images")
-          .upload(path, selectedImage, {
-            contentType: selectedImage.type,
-            cacheControl: "3600",
-            upsert: false
-          });
 
-        if (uploadError) throw uploadError;
+        const { error } = await db.storage.from("echo-images").upload(
+          path, selectedImage,
+          { contentType: selectedImage.type, cacheControl: "3600", upsert: false }
+        );
+        if (error) throw error;
 
-        const { data: publicData } = db.storage
-          .from("echo-images")
-          .getPublicUrl(path);
-        imageUrl = publicData.publicUrl;
+        imageUrl = db.storage.from("echo-images").getPublicUrl(path).data.publicUrl;
       }
 
       const { error } = await db.from("posts").insert({
         user_id: currentUser.id,
         username: myProfile.username,
-        message,
+        message: message || "",
         image_url: imageUrl
       });
-
       if (error) throw error;
 
       $("postMessage").value = "";
@@ -522,7 +530,7 @@
       selectedImage = null;
 
       await refreshData();
-      status("Published successfully!", true);
+      setStatus("Published successfully!", true);
     } catch (err) {
       alert("Couldn't publish your post: " + err.message);
     } finally {
@@ -532,6 +540,7 @@
   });
 
   $("editProfileBtn").addEventListener("click", () => {
+    if (!myProfile) return;
     $("editUsername").value = myProfile.username;
     $("editBio").value = myProfile.bio || "";
     show("editPanel");
@@ -540,24 +549,30 @@
 
   $("cancelEditBtn").addEventListener("click", () => show("editPanel", false));
 
-  $("editForm").addEventListener("submit", async (event) => {
+  $("editForm").addEventListener("submit", async event => {
     event.preventDefault();
+
+    if (!currentUser?.id || !myProfile) {
+      alert("Your session or profile is missing. Refresh and try again.");
+      return;
+    }
+
     const username = $("editUsername").value.trim();
     const bio = $("editBio").value.trim();
 
     if (username.length < 2 || username.length > 30) {
-      alert("Your username must be between 2 and 30 characters.");
+      alert("Username must be 2–30 characters.");
       return;
     }
 
     const button = $("editForm").querySelector('button[type="submit"]');
     button.disabled = true;
+
     try {
       const { data, error } = await db.from("profiles")
         .update({ username, bio })
         .eq("user_id", currentUser.id)
-        .select()
-        .single();
+        .select().single();
 
       if (error) throw error;
 
@@ -565,63 +580,63 @@
       renderMyProfile();
       show("editPanel", false);
       await refreshData();
-      status("Profile updated!", true);
+      setStatus("Profile updated!", true);
     } catch (err) {
-      if (err.code === "23505") {
-        alert("That username is already taken.");
-      } else {
-        alert("Couldn't update your profile: " + err.message);
-      }
+      alert(err.code === "23505"
+        ? "That username is already taken."
+        : "Couldn't update profile: " + err.message);
     } finally {
       button.disabled = false;
     }
   });
 
-  $("viewMyProfileBtn").addEventListener("click", () => openProfile(currentUser.id));
+  $("viewMyProfileBtn").addEventListener("click", () => {
+    if (currentUser?.id) openProfile(currentUser.id);
+  });
+
   $("closeProfileBtn").addEventListener("click", () => show("profileView", false));
+
   $("refreshBtn").addEventListener("click", async () => {
     try {
       await refreshData();
-      status("Wall refreshed.", true);
+      setStatus("Wall refreshed.", true);
     } catch (err) {
       alert("Couldn't refresh the wall: " + err.message);
     }
   });
 
+  function startRealtime() {
+    if (channel) return;
+
+    channel = db.channel("echo-wall-live-feed")
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "posts"
+      }, async () => {
+        try { await refreshData(); } catch (err) { console.error(err); }
+      })
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "likes"
+      }, async () => {
+        try { await refreshData(); } catch (err) { console.error(err); }
+      })
+      .subscribe(state => {
+        if (state === "SUBSCRIBED") {
+          setStatus("Connected · live public wall", true);
+        }
+      });
+  }
+
   async function start() {
     try {
-      if (!window.supabase) {
-        throw new Error("Supabase library did not load. Check your internet connection.");
-      }
-
       await ensureSession();
 
       if (myProfile) {
         await refreshData();
-
-        // Listen for new posts so other visitors see updates without refreshing.
-        db.channel("echo-wall-live-feed")
-          .on("postgres_changes", {
-            event: "INSERT",
-            schema: "public",
-            table: "posts"
-          }, async () => {
-            try { await refreshData(); } catch (e) { console.error(e); }
-          })
-          .on("postgres_changes", {
-            event: "*",
-            schema: "public",
-            table: "likes"
-          }, async () => {
-            try { await refreshData(); } catch (e) { console.error(e); }
-          })
-          .subscribe((state) => {
-            if (state === "SUBSCRIBED") status("Connected · live public wall", true);
-          });
+        startRealtime();
       }
     } catch (err) {
       console.error(err);
-      status("Connection failed");
+      setStatus("Connection failed");
       alert("Echo Wall couldn't connect: " + (err.message || String(err)));
     }
   }
