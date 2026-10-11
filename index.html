@@ -4,34 +4,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Echo Wall</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sniglet:wght@400;800&family=Ultra&display=swap" rel="stylesheet">
-  <title>Echo Wall</title>
-  <script src="https://cdn.jsdelivr.net/gh/ncase/nutshell/nutshell.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sniglet:wght@400;800&display=swap" rel="stylesheet">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/gh/ncase/nutshell/nutshell.js"></script>
+
   <style>
-    body { 
-    background:#0f172a;
-            color: white;
-            font-family: 'Sniglet', system-ui, sans-serif;
+    body {
+      background: #0f172a;
+      color: white;
+      font-family: 'Sniglet', system-ui, sans-serif;
     }
-    input, textarea { color-scheme:dark; }
-    .wall-card { background:#111c30; border:1px solid #26334a; border-radius:16px; padding:16px; }
-    .muted { color:#94a3b8; }
-    .action { background:#1e293b; border:1px solid #334155; border-radius:10px; padding:8px 12px; font-size:13px; }
-    .action:hover { background:#334155; }
-    .primary { background:#4f46e5; border-radius:10px; padding:10px 15px; font-weight:600; }
-    .primary:hover { background:#6366f1; }
-    .field { width:100%; background:#020617; border:1px solid #334155; border-radius:10px; padding:11px 12px; outline:none; }
-    .field:focus { border-color:#818cf8; }
-    .post-image { display:block; width:100%; max-height:420px; object-fit:contain; background:#020617; border-radius:12px; margin-top:12px; }
-    button:disabled { opacity:.5; cursor:not-allowed; }
-    .hidden { display:none !important; }
+    input, textarea { color-scheme: dark; }
+    .wall-card {
+      background: #111c30;
+      border: 1px solid #26334a;
+      border-radius: 16px;
+      padding: 16px;
+    }
+    .muted { color: #94a3b8; }
+    .action {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+    .action:hover { background: #334155; }
+    .primary {
+      background: #4f46e5;
+      border-radius: 10px;
+      padding: 10px 15px;
+      font-weight: 600;
+    }
+    .primary:hover { background: #6366f1; }
+    .field {
+      width: 100%;
+      background: #020617;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 11px 12px;
+      outline: none;
+    }
+    .field:focus { border-color: #818cf8; }
+    .post-image {
+      display: block;
+      width: 100%;
+      max-height: 420px;
+      object-fit: contain;
+      background: #020617;
+      border-radius: 12px;
+      margin-top: 12px;
+    }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .hidden { display: none !important; }
+    .reply-card {
+      margin-left: 8px;
+      border-left: 2px solid #334155;
+      padding-left: 12px;
+    }
   </style>
 </head>
-  
+
 <body class="min-h-screen">
 <header class="max-w-2xl mx-auto px-4 pt-8 pb-5">
   <div class="flex items-center justify-between gap-3">
@@ -45,6 +84,7 @@
 </header>
 
 <main class="max-w-2xl mx-auto px-4 pb-12 space-y-5">
+
   <section id="setupPanel" class="wall-card hidden">
     <h2 class="text-xl font-bold mb-1">Welcome to Echo Wall 👋</h2>
     <p class="muted text-sm mb-4">Choose a username. No email needed.</p>
@@ -72,7 +112,7 @@
     <h2 class="font-semibold mb-3">What's on your mind?</h2>
     <form id="postForm" class="space-y-3">
       <textarea id="postMessage" class="field" maxlength="250" rows="3"
-        placeholder="Write something..." required></textarea>
+        placeholder="Write something..." ></textarea>
       <div class="flex flex-wrap items-center justify-between gap-3">
         <label class="action cursor-pointer">
           📷 Add image
@@ -120,6 +160,7 @@
       </div>
     </form>
   </section>
+
 </main>
 
 <script>
@@ -128,14 +169,16 @@
 
   const SUPABASE_URL = "https://qdncdhvhuhlwrksrxmeq.supabase.co";
   const SUPABASE_KEY = "sb_publishable_BxFce1GWJtPN03dg8pRnLA_EkRk9-Sq";
+
   const $ = id => document.getElementById(id);
 
   if (!window.supabase) {
-    $("status").textContent = "Supabase failed to load. Check your connection.";
+    $("status").textContent = "Supabase failed to load. Check your internet connection.";
     return;
   }
 
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
   let currentUser = null;
   let myProfile = null;
   let selectedImage = null;
@@ -143,6 +186,7 @@
   let allProfiles = [];
   let allLikes = [];
   let channel = null;
+  let loading = false;
 
   function setStatus(message, good = false) {
     $("status").textContent = message;
@@ -169,9 +213,21 @@
     return Number.isNaN(d.getTime()) ? "" : d.toLocaleString();
   }
 
+  function requireUser() {
+    if (!currentUser || !currentUser.id) {
+      alert("Your session isn't ready. Refresh the page and wait until Echo Wall connects.");
+      return false;
+    }
+    if (!myProfile) {
+      alert("Please create your username profile first.");
+      return false;
+    }
+    return true;
+  }
+
   function renderMyProfile() {
     if (!myProfile) return;
-    $("myUsername").textContent = '@' + myProfile.username;
+    $("myUsername").textContent = "@" + myProfile.username;
     $("myBio").textContent = myProfile.bio || "No bio yet.";
     $("myAvatar").textContent = myProfile.username.slice(0, 1).toUpperCase();
     $("editUsername").value = myProfile.username;
@@ -186,16 +242,21 @@
     const { data: sessionData, error: sessionError } = await db.auth.getSession();
     if (sessionError) throw sessionError;
 
-    if (sessionData.session?.user) {
+    if (sessionData.session && sessionData.session.user) {
       currentUser = sessionData.session.user;
     } else {
       const { data, error } = await db.auth.signInAnonymously();
-      if (error) throw error;
+      if (error) {
+        throw new Error(
+          "Anonymous sign-in failed. In Supabase, enable Authentication → Sign In / Providers → Anonymous Sign-Ins. Details: " +
+          error.message
+        );
+      }
       currentUser = data.user;
     }
 
-    if (!currentUser?.id) {
-      throw new Error("No user session was created. Check that Anonymous Sign-ins are enabled in Supabase Authentication.");
+    if (!currentUser || !currentUser.id) {
+      throw new Error("Supabase did not return a user session. Please refresh.");
     }
 
     const { data: profile, error } = await db.from("profiles")
@@ -232,13 +293,22 @@
     allPosts = postsRes.data || [];
     allProfiles = profilesRes.data || [];
     allLikes = likesRes.data || [];
+
     renderFeed();
+
+    if (!$("profileView").classList.contains("hidden")) {
+      const profileId = $("profileView").dataset.userId;
+      if (profileId) renderProfilePosts(profileId);
+    }
   }
 
   function profileButton(userId, fallbackName) {
     const profile = getProfile(userId);
-    const button = make("button", "text-indigo-300 font-semibold text-sm hover:underline",
-      "@" + (profile?.username || fallbackName || "user"));
+    const button = make(
+      "button",
+      "text-indigo-300 font-semibold text-sm hover:underline",
+      "@" + (profile?.username || fallbackName || "user")
+    );
 
     if (userId) {
       button.addEventListener("click", () => openProfile(userId));
@@ -250,7 +320,7 @@
 
   function renderPost(post, isReply = false) {
     const card = make("article", "wall-card");
-    if (isReply) card.classList.add("ml-3");
+    if (isReply) card.classList.add("reply-card");
 
     const top = make("div", "flex justify-between items-start gap-3");
     const author = make("div", "min-w-0");
@@ -262,6 +332,8 @@
       top.append(make("span", "text-xs text-emerald-400", "You"));
     }
     card.append(top);
+
+    // Use textContent so public posts cannot inject arbitrary HTML.
     card.append(make("p", "text-sm mt-3 whitespace-pre-wrap break-words", post.message || ""));
 
     if (post.image_url) {
@@ -281,10 +353,7 @@
       (liked ? "▲" : "△") + " Like · " + likeRows.length);
 
     likeBtn.addEventListener("click", async () => {
-      if (!currentUser?.id) {
-        alert("Your session is missing. Refresh the page and try again.");
-        return;
-      }
+      if (!requireUser()) return;
 
       likeBtn.disabled = true;
       try {
@@ -310,71 +379,85 @@
 
     actions.append(likeBtn);
 
+    let replyBtn = null;
+    let replyArea = null;
+    let replyInput = null;
+    let replySubmit = null;
+
     if (!isReply) {
-      const replyBtn = make("button", "action", "↩ Reply");
+      replyBtn = make("button", "action", "↩ Reply");
       actions.append(replyBtn);
     }
 
     card.append(actions);
 
     if (!isReply) {
-      const replyArea = make("div", "hidden mt-3");
+      replyArea = make("div", "hidden mt-3");
       const replyForm = make("form", "space-y-2");
-      const replyInput = make("textarea", "field");
+
+      replyInput = make("textarea", "field");
       replyInput.rows = 2;
       replyInput.maxLength = 250;
       replyInput.placeholder = "Write a reply...";
       replyInput.required = true;
 
-      const replySubmit = make("button", "primary", "Send reply");
+      replySubmit = make("button", "primary", "Send reply");
       replySubmit.type = "submit";
-      replyForm.append(replyInput, replySubmit);
 
+      replyForm.append(replyInput, replySubmit);
       replyForm.addEventListener("submit", async event => {
         event.preventDefault();
 
-        if (!currentUser?.id || !myProfile) {
-          alert("Your session or profile is missing. Refresh the page and try again.");
+        if (!requireUser()) return;
+
+        const message = replyInput.value.trim();
+        if (!message) {
+          alert("Please write a reply first.");
           return;
         }
 
-        const text = replyInput.value.trim();
-        if (!text) return;
-
         replySubmit.disabled = true;
+        replySubmit.textContent = "Sending...";
+
         try {
           const { error } = await db.from("posts").insert({
             user_id: currentUser.id,
             username: myProfile.username,
-            message: text,
-            parent_post_id: post.id
+            message: message,
+            parent_post_id: post.id,
+            image_url: null
           });
+
           if (error) throw error;
 
           replyInput.value = "";
+          replyArea.classList.add("hidden");
           await refreshData();
+          setStatus("Reply posted!", true);
         } catch (err) {
           alert("Couldn't send reply: " + err.message);
         } finally {
           replySubmit.disabled = false;
+          replySubmit.textContent = "Send reply";
         }
       });
 
       replyArea.append(replyForm);
       card.append(replyArea);
 
-      const replyBtn = actions.querySelector("button:nth-child(2)");
+      // Attach the handler to the exact button created for this post.
       replyBtn.addEventListener("click", () => {
         replyArea.classList.toggle("hidden");
         if (!replyArea.classList.contains("hidden")) replyInput.focus();
       });
 
       const replies = allPosts
-        .filter(p => String(p.parent_post_id) === String(post.id))
+        .filter(p => p.parent_post_id != null &&
+          String(p.parent_post_id) === String(post.id))
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
       if (replies.length) {
-        const repliesBox = make("div", "mt-4 space-y-3 border-l border-slate-700 pl-3");
+        const repliesBox = make("div", "mt-4 space-y-3");
         replies.forEach(reply => repliesBox.append(renderPost(reply, true)));
         card.append(repliesBox);
       }
@@ -387,37 +470,43 @@
     const feed = $("feed");
     feed.replaceChildren();
 
-    const posts = allPosts.filter(p => !p.parent_post_id);
+    const posts = allPosts.filter(p => p.parent_post_id == null);
     if (!posts.length) {
       feed.append(make("div", "wall-card muted text-sm text-center",
         "No posts yet. Be the first to publish!"));
       return;
     }
+
     posts.forEach(post => feed.append(renderPost(post)));
+  }
+
+  function renderProfilePosts(userId) {
+    const list = $("profilePosts");
+    list.replaceChildren();
+
+    const posts = allPosts.filter(p =>
+      p.user_id === userId && p.parent_post_id == null
+    );
+
+    if (!posts.length) {
+      list.append(make("p", "muted text-sm", "No posts yet."));
+      return;
+    }
+
+    posts.forEach(post => list.append(renderPost(post)));
   }
 
   async function openProfile(userId) {
     const profile = getProfile(userId);
     if (!profile) {
-      alert("This profile is unavailable.");
+      alert("This profile is unavailable. Try refreshing the wall.");
       return;
     }
 
+    $("profileView").dataset.userId = userId;
     $("profileViewName").textContent = "@" + profile.username;
     $("profileViewBio").textContent = profile.bio || "No bio yet.";
-
-    const list = $("profilePosts");
-    list.replaceChildren();
-
-    const posts = allPosts.filter(p =>
-      p.user_id === userId && !p.parent_post_id
-    );
-
-    if (!posts.length) {
-      list.append(make("p", "muted text-sm", "No posts yet."));
-    } else {
-      posts.forEach(post => list.append(renderPost(post)));
-    }
+    renderProfilePosts(userId);
 
     show("profileView");
     $("profileView").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -425,8 +514,9 @@
 
   $("setupForm").addEventListener("submit", async event => {
     event.preventDefault();
+
     if (!currentUser?.id) {
-      alert("Your session is missing. Refresh and try again.");
+      alert("Your session is not ready. Refresh and try again.");
       return;
     }
 
@@ -438,15 +528,19 @@
       return;
     }
 
-    const button = $("setupForm").querySelector("button");
+    const button = $("setupForm").querySelector('button[type="submit"]');
     button.disabled = true;
+    button.textContent = "Creating profile...";
 
     try {
       const { data, error } = await db.from("profiles").insert({
-        user_id: currentUser.id, username, bio
-      }).select().single();
+        user_id: currentUser.id,
+        username,
+        bio
+      }).select("user_id, username, bio, created_at").single();
 
       if (error) throw error;
+
       myProfile = data;
       renderMyProfile();
       await refreshData();
@@ -454,10 +548,11 @@
       setStatus("Your profile is ready!", true);
     } catch (err) {
       alert(err.code === "23505"
-        ? "That username is already taken."
+        ? "That username is already taken. Please choose another."
         : "Couldn't create profile: " + err.message);
     } finally {
       button.disabled = false;
+      button.textContent = "Create my profile";
     }
   });
 
@@ -470,6 +565,7 @@
     if (!file) return;
 
     const types = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
     if (!types.includes(file.type)) {
       alert("Choose a JPG, PNG, WEBP, or GIF image.");
       $("postImage").value = "";
@@ -493,10 +589,7 @@
   $("postForm").addEventListener("submit", async event => {
     event.preventDefault();
 
-    if (!currentUser?.id || !myProfile) {
-      alert("Your session or profile is missing. Refresh and try again.");
-      return;
-    }
+    if (!requireUser()) return;
 
     const message = $("postMessage").value.trim();
     if (!message && !selectedImage) {
@@ -515,11 +608,12 @@
         const ext = selectedImage.name.split(".").pop().toLowerCase();
         const path = currentUser.id + "/" + crypto.randomUUID() + "." + ext;
 
-        const { error } = await db.storage.from("echo-images").upload(
-          path, selectedImage,
+        const { error: uploadError } = await db.storage.from("echo-images").upload(
+          path,
+          selectedImage,
           { contentType: selectedImage.type, cacheControl: "3600", upsert: false }
         );
-        if (error) throw error;
+        if (uploadError) throw uploadError;
 
         imageUrl = db.storage.from("echo-images").getPublicUrl(path).data.publicUrl;
       }
@@ -527,9 +621,11 @@
       const { error } = await db.from("posts").insert({
         user_id: currentUser.id,
         username: myProfile.username,
-        message: message || "",
-        image_url: imageUrl
+        message: message,
+        image_url: imageUrl,
+        parent_post_id: null
       });
+
       if (error) throw error;
 
       $("postMessage").value = "";
@@ -561,10 +657,7 @@
   $("editForm").addEventListener("submit", async event => {
     event.preventDefault();
 
-    if (!currentUser?.id || !myProfile) {
-      alert("Your session or profile is missing. Refresh and try again.");
-      return;
-    }
+    if (!requireUser()) return;
 
     const username = $("editUsername").value.trim();
     const bio = $("editBio").value.trim();
@@ -581,7 +674,8 @@
       const { data, error } = await db.from("profiles")
         .update({ username, bio })
         .eq("user_id", currentUser.id)
-        .select().single();
+        .select("user_id, username, bio, created_at")
+        .single();
 
       if (error) throw error;
 
@@ -606,11 +700,16 @@
   $("closeProfileBtn").addEventListener("click", () => show("profileView", false));
 
   $("refreshBtn").addEventListener("click", async () => {
+    const button = $("refreshBtn");
+    button.disabled = true;
+
     try {
       await refreshData();
       setStatus("Wall refreshed.", true);
     } catch (err) {
       alert("Couldn't refresh the wall: " + err.message);
+    } finally {
+      button.disabled = false;
     }
   });
 
@@ -621,32 +720,40 @@
       .on("postgres_changes", {
         event: "*", schema: "public", table: "posts"
       }, async () => {
-        try { await refreshData(); } catch (err) { console.error(err); }
+        try { await refreshData(); }
+        catch (err) { console.error("Post refresh failed:", err); }
       })
       .on("postgres_changes", {
         event: "*", schema: "public", table: "likes"
       }, async () => {
-        try { await refreshData(); } catch (err) { console.error(err); }
+        try { await refreshData(); }
+        catch (err) { console.error("Like refresh failed:", err); }
       })
-      .subscribe(state => {
-        if (state === "SUBSCRIBED") {
-          setStatus("Connected · live public wall", true);
-        }
-      });
+      .subscribe();
   }
 
   async function start() {
+    if (loading) return;
+    loading = true;
+    setStatus("Connecting to Echo Wall...");
+
     try {
       await ensureSession();
 
       if (myProfile) {
         await refreshData();
         startRealtime();
+        setStatus("Connected · live public wall", true);
       }
     } catch (err) {
-      console.error(err);
-      setStatus("Connection failed");
-      alert("Echo Wall couldn't connect: " + (err.message || String(err)));
+      console.error("Echo Wall connection error:", err);
+      setStatus("Connection failed · see error below");
+      $("feed").replaceChildren(
+        make("div", "wall-card text-sm text-rose-300",
+          "Couldn't connect: " + (err.message || String(err)))
+      );
+    } finally {
+      loading = false;
     }
   }
 
