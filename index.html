@@ -123,6 +123,10 @@
    <textarea id="postMessage" class="field" maxlength="1000" rows="5"
      placeholder="Write something..."></textarea>
 </div>
+      <label class="flex items-center gap-2 text-sm muted cursor-pointer">
+        <input id="anonymousToggle" type="checkbox">
+        Post anonymously
+      </label>
       <div class="flex flex-wrap items-center justify-between gap-3">
         <label class="action cursor-pointer">
           📷 Add image
@@ -416,8 +420,13 @@ setInterval(updateCountdowns, 60 * 1000);
     const top = make("div", "flex justify-between items-start gap-3");
     const author = make("div", "min-w-0");
 
-    author.append(profileButton(post.user_id, post.username));
-author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
+    const isAnonymousPost = String(post.username || "").toLowerCase() === "anonymous";
+    const authorName = isAnonymousPost
+      ? make("span", "font-semibold text-sm text-slate-200", "Anonymous")
+      : profileButton(post.user_id, post.username);
+
+    author.append(authorName);
+    author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
 
 const countdown = make("p", "muted text-xs mt-1", timeLeftText(post.created_at));
 countdown.dataset.expiresAt =
@@ -791,9 +800,12 @@ top.append(author);
         imageUrl = db.storage.from("echo-images").getPublicUrl(path).data.publicUrl;
       }
 
+      const isAnonymousPost = $("anonymousToggle").checked;
+      const postUsername = isAnonymousPost ? "Anonymous" : myProfile.username;
+
       const { error } = await db.from("posts").insert({
         user_id: currentUser.id,
-        username: myProfile.username,
+        username: postUsername,
         message,
         image_url: imageUrl,
         parent_post_id: null
@@ -803,6 +815,7 @@ top.append(author);
 
       $("postMessage").value = "";
       $("postImage").value = "";
+      $("anonymousToggle").checked = false;
       $("imagePreview").classList.add("hidden");
       $("imageLabel").textContent = "Images up to 5 MB";
       selectedImage = null;
