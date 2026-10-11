@@ -168,7 +168,7 @@
   </section>
 
 </main>
-
+  
 <script>
 (() => {
   "use strict";
@@ -220,7 +220,7 @@
   }
 
   function requireUser() {
-    if (!currentUser?.id) {
+    if (!currentUser || !currentUser.id) {
       alert("Your session isn't ready. Refresh the page and wait until Echo Wall connects.");
       return false;
     }
@@ -231,13 +231,51 @@
     return true;
   }
 
+  // B button: wrap selected text in bold markers.
+  const boldBtn = $("boldBtn");
+  if (boldBtn) {
+    boldBtn.addEventListener("click", () => {
+      const box = $("postMessage");
+      const start = box.selectionStart;
+      const end = box.selectionEnd;
+
+      if (start === end) {
+        alert("Select the text you want to bold first.");
+        return;
+      }
+
+      const selected = box.value.slice(start, end);
+      box.setRangeText(`**${selected}**`, start, end, "select");
+      box.focus();
+    });
+  }
+
+  // Safely render **bold text** without allowing HTML injection.
+  function appendFormattedText(element, text) {
+    const parts = String(text || "").split(/(\*\*[\s\S]+?\*\*)/g);
+
+    parts.forEach(part => {
+      const match = part.match(/^\*\*([\s\S]+)\*\*$/);
+
+      if (match) {
+        const bold = document.createElement("strong");
+        bold.textContent = match[1];
+        element.append(bold);
+      } else {
+        element.append(document.createTextNode(part));
+      }
+    });
+  }
+
   function renderMyProfile() {
     if (!myProfile) return;
+
     $("myUsername").textContent = "@" + myProfile.username;
     $("myBio").textContent = myProfile.bio || "No bio yet.";
     $("myAvatar").textContent = myProfile.username.slice(0, 1).toUpperCase();
     $("editUsername").value = myProfile.username;
     $("editBio").value = myProfile.bio || "";
+
     show("myProfile");
     show("composer");
     show("editProfileBtn");
@@ -248,20 +286,22 @@
     const { data: sessionData, error: sessionError } = await db.auth.getSession();
     if (sessionError) throw sessionError;
 
-    if (sessionData.session?.user) {
+    if (sessionData.session && sessionData.session.user) {
       currentUser = sessionData.session.user;
     } else {
       const { data, error } = await db.auth.signInAnonymously();
+
       if (error) {
         throw new Error(
           "Anonymous sign-in failed. In Supabase, enable Authentication → Sign In / Providers → Anonymous Sign-Ins. Details: " +
           error.message
         );
       }
+
       currentUser = data.user;
     }
 
-    if (!currentUser?.id) {
+    if (!currentUser || !currentUser.id) {
       throw new Error("Supabase did not return a user session. Please refresh.");
     }
 
@@ -321,6 +361,7 @@
     } else {
       button.disabled = true;
     }
+
     return button;
   }
 
@@ -330,6 +371,7 @@
 
     const top = make("div", "flex justify-between items-start gap-3");
     const author = make("div", "min-w-0");
+
     author.append(profileButton(post.user_id, post.username));
     author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
     top.append(author);
@@ -337,9 +379,12 @@
     if (post.user_id && post.user_id === currentUser?.id) {
       top.append(make("span", "text-xs text-emerald-400", "You"));
     }
+
     card.append(top);
 
-    card.append(make("p", "text-sm mt-3 whitespace-pre-wrap break-words", post.message || ""));
+    const messageEl = make("p", "text-sm mt-3 whitespace-pre-wrap break-words");
+    appendFormattedText(messageEl, post.message || "");
+    card.append(messageEl);
 
     if (post.image_url) {
       const img = make("img", "post-image");
@@ -354,26 +399,33 @@
     const liked = likeRows.some(l => l.user_id === currentUser?.id);
     const actions = make("div", "flex flex-wrap items-center gap-2 mt-4");
 
-    const likeBtn = make("button", "action",
-      (liked ? "▲" : "△") + " Like · " + likeRows.length);
+    const likeBtn = make(
+      "button",
+      "action",
+      (liked ? "▲" : "△") + " Like · " + likeRows.length
+    );
 
     likeBtn.addEventListener("click", async () => {
       if (!requireUser()) return;
 
       likeBtn.disabled = true;
+
       try {
         if (liked) {
           const { error } = await db.from("likes").delete()
             .eq("post_id", post.id)
             .eq("user_id", currentUser.id);
+
           if (error) throw error;
         } else {
           const { error } = await db.from("likes").insert({
             post_id: post.id,
             user_id: currentUser.id
           });
+
           if (error) throw error;
         }
+
         await refreshData();
       } catch (err) {
         alert("Couldn't update your like: " + err.message);
@@ -384,15 +436,13 @@
 
     actions.append(likeBtn);
 
-    // DELETE BUTTON: shown only on your own posts and replies.
-    if (currentUser?.id && post.user_id === currentUser.id) {
-      const deleteBtn = make("button", "action", "🗑 Delete");
-      deleteBtn.classList.add("text-rose-400");
+    // Delete button for your own posts and replies.
+    if (post.user_id && post.user_id === currentUser?.id) {
+      const deleteBtn = make("button", "action text-rose-400", "🗑 Delete");
 
       deleteBtn.addEventListener("click", async () => {
         if (!requireUser()) return;
-
-        if (!confirm("Delete this post? Any replies may also be deleted.")) return;
+        if (!confirm("Delete this post? Replies may also be deleted.")) return;
 
         deleteBtn.disabled = true;
         deleteBtn.textContent = "Deleting...";
@@ -435,7 +485,7 @@
 
       replyInput = make("textarea", "field");
       replyInput.rows = 4;
-      replyInput.maxLength = 250;
+      replyInput.maxLength = 1000;
       replyInput.placeholder = "Write a reply...";
       replyInput.required = true;
 
@@ -446,15 +496,18 @@
 
       replyForm.addEventListener("submit", async event => {
         event.preventDefault();
+
         if (!requireUser()) return;
 
         const message = replyInput.value.trim();
+
         if (!message) {
           alert("Please write a reply first.");
           return;
         }
-        if (message.length > 250) {
-          alert("Replies must be 250 characters or fewer.");
+
+        if (message.length > 1000) {
+          alert("Replies can be up to 1,000 characters.");
           return;
         }
 
@@ -512,6 +565,7 @@
     feed.replaceChildren();
 
     const posts = allPosts.filter(p => p.parent_post_id == null);
+
     if (!posts.length) {
       feed.append(make("div", "wall-card muted text-sm text-center",
         "No posts yet. Be the first to publish!"));
@@ -539,6 +593,7 @@
 
   async function openProfile(userId) {
     const profile = getProfile(userId);
+
     if (!profile) {
       alert("This profile is unavailable. Try refreshing the wall.");
       return;
@@ -547,8 +602,8 @@
     $("profileView").dataset.userId = userId;
     $("profileViewName").textContent = "@" + profile.username;
     $("profileViewBio").textContent = profile.bio || "No bio yet.";
-    renderProfilePosts(userId);
 
+    renderProfilePosts(userId);
     show("profileView");
     $("profileView").scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -599,6 +654,7 @@
 
   $("postImage").addEventListener("change", () => {
     const file = $("postImage").files[0] || null;
+
     selectedImage = file;
     $("imagePreview").classList.add("hidden");
     $("imageLabel").textContent = file ? file.name : "Images up to 5 MB";
@@ -629,15 +685,18 @@
 
   $("postForm").addEventListener("submit", async event => {
     event.preventDefault();
+
     if (!requireUser()) return;
 
     const message = $("postMessage").value.trim();
+
     if (!message && !selectedImage) {
       alert("Write a message or choose an image.");
       return;
     }
-    if (message.length > 250) {
-      alert("Posts must be 250 characters or fewer.");
+
+    if (message.length > 1000) {
+      alert("Posts can be up to 1,000 characters.");
       return;
     }
 
@@ -655,8 +714,13 @@
         const { error: uploadError } = await db.storage.from("echo-images").upload(
           path,
           selectedImage,
-          { contentType: selectedImage.type, cacheControl: "3600", upsert: false }
+          {
+            contentType: selectedImage.type,
+            cacheControl: "3600",
+            upsert: false
+          }
         );
+
         if (uploadError) throw uploadError;
 
         imageUrl = db.storage.from("echo-images").getPublicUrl(path).data.publicUrl;
@@ -690,8 +754,10 @@
 
   $("editProfileBtn").addEventListener("click", () => {
     if (!myProfile) return;
+
     $("editUsername").value = myProfile.username;
     $("editBio").value = myProfile.bio || "";
+
     show("editPanel");
     $("editPanel").scrollIntoView({ behavior: "smooth", block: "center" });
   });
@@ -700,6 +766,7 @@
 
   $("editForm").addEventListener("submit", async event => {
     event.preventDefault();
+
     if (!requireUser()) return;
 
     const username = $("editUsername").value.trim();
@@ -761,7 +828,9 @@
 
     channel = db.channel("echo-wall-live-feed")
       .on("postgres_changes", {
-        event: "*", schema: "public", table: "posts"
+        event: "*",
+        schema: "public",
+        table: "posts"
       }, async () => {
         try {
           await refreshData();
@@ -770,7 +839,9 @@
         }
       })
       .on("postgres_changes", {
-        event: "*", schema: "public", table: "likes"
+        event: "*",
+        schema: "public",
+        table: "likes"
       }, async () => {
         try {
           await refreshData();
@@ -783,6 +854,7 @@
 
   async function start() {
     if (loading) return;
+
     loading = true;
     setStatus("Connecting to Echo Wall...");
 
@@ -796,7 +868,7 @@
       }
     } catch (err) {
       console.error("Echo Wall connection error:", err);
-      setStatus("Connection failed · see message below");
+      setStatus("Connection failed · see error below");
       $("feed").replaceChildren(
         make("div", "wall-card text-sm text-rose-300",
           "Couldn't connect: " + (err.message || String(err)))
@@ -808,20 +880,6 @@
 
   start();
 })();
-  document.getElementById("boldBtn").addEventListener("click", () => {
-  const box = document.getElementById("postMessage");
-  const start = box.selectionStart;
-  const end = box.selectionEnd;
-
-  if (start === end) {
-    alert("Select the text you want to bold first.");
-    return;
-  }
-
-  const selected = box.value.slice(start, end);
-  box.setRangeText(`**${selected}**`, start, end, "select");
-  box.focus();
-});
 </script>
 </body>
 </html>
