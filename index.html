@@ -91,7 +91,7 @@
     <form id="setupForm" class="space-y-3">
       <input id="setupUsername" class="field" minlength="2" maxlength="30"
         placeholder="Username (2–30 characters)" required>
-      <textarea id="setupBio" class="field" maxlength="160" rows="2"
+      <textarea id="setupBio" class="field" maxlength="250" rows="3"
         placeholder="Short bio (optional)"></textarea>
       <button class="primary w-full" type="submit">Create my profile</button>
     </form>
@@ -111,7 +111,7 @@
   <section id="composer" class="wall-card hidden">
     <h2 class="font-semibold mb-3">What's on your mind?</h2>
     <form id="postForm" class="space-y-3">
-      <textarea id="postMessage" class="field" maxlength="250" rows="3"
+      <textarea id="postMessage" class="field" maxlength="1000" rows="5"
         placeholder="Write something..." ></textarea>
       <div class="flex flex-wrap items-center justify-between gap-3">
         <label class="action cursor-pointer">
@@ -153,7 +153,7 @@
       <label class="block text-sm muted">Username</label>
       <input id="editUsername" class="field" minlength="2" maxlength="30" required>
       <label class="block text-sm muted">Short bio</label>
-      <textarea id="editBio" class="field" maxlength="160" rows="3"></textarea>
+      <textarea id="editBio" class="field" maxlength="250" rows="3"></textarea>
       <div class="flex gap-2">
         <button type="submit" class="primary flex-1">Save changes</button>
         <button type="button" id="cancelEditBtn" class="action">Cancel</button>
@@ -396,8 +396,8 @@
       const replyForm = make("form", "space-y-2");
 
       replyInput = make("textarea", "field");
-      replyInput.rows = 2;
-      replyInput.maxLength = 250;
+      replyInput.rows = 4;
+      replyInput.maxLength = 750;
       replyInput.placeholder = "Write a reply...";
       replyInput.required = true;
 
