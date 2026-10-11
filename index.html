@@ -72,7 +72,7 @@
         </div>
     </section>
 
-    <!-- Logic Script -->
+        <!-- Keep the script tags around the code! -->
     <script>
         const usernameInput = document.getElementById('usernameInput');
         const setNameBtn = document.getElementById('setNameBtn');
@@ -88,9 +88,9 @@
         const syncStatus = document.getElementById('syncStatus');
         const emptyPrompt = document.getElementById('emptyPrompt');
 
-        let myName = '';
+        let myName = "";
         let peer = null;
-        let activeConnection = null;
+        let connections = []; // Array to store multiple direct connections
 
         setNameBtn.addEventListener('click', () => {
             const name = usernameInput.value.trim();
@@ -108,6 +108,7 @@
                 myPeerIdDisplay.textContent = id;
             });
 
+            // Listen for incoming connection requests from any friends
             peer.on('connection', (conn) => {
                 setupChatConnection(conn);
             });
@@ -121,26 +122,24 @@
         connectBtn.addEventListener('click', () => {
             const friendId = friendIdInput.value.trim();
             if (!friendId) return alert('Paste an ID first!');
-            
+
             connectBtn.textContent = 'Connecting...';
             const conn = peer.connect(friendId);
             setupChatConnection(conn);
         });
 
         function setupChatConnection(conn) {
-            activeConnection = conn;
+            // Save this connection to our array list
+            connections.push(conn);
 
-            activeConnection.on('open', () => {
-                syncStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Linked with Friend';
-                syncStatus.className = "text-xs text-emerald-400 flex items-center gap-1";
+            conn.on('open', () => {
+                syncStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Linked with Network`;
                 submitPostBtn.removeAttribute('disabled');
-                submitPostBtn.textContent = "Broadcast to Friend";
-                connectBtn.textContent = 'Connected!';
-                connectBtn.className = "bg-slate-800 text-slate-400 font-semibold py-3 px-6 rounded-xl transition-all shadow-md";
+                submitPostBtn.textContent = "Broadcast to Network";
                 if(emptyPrompt) emptyPrompt.style.display = 'none';
             });
 
-            activeConnection.on('data', (data) => {
+            conn.on('data', (data) => {
                 appendCardToFeed(data.username, data.message, data.timestamp);
             });
         }
@@ -148,7 +147,7 @@
         noteForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const text = noteInput.value.trim();
-            if (!text || !activeConnection) return;
+            if (!text) return;
 
             const timeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
@@ -158,7 +157,14 @@
                 timestamp: timeLabel
             };
 
-            activeConnection.send(messagePayload);
+            // Loop through every connected browser tab and send them the note
+            connections.forEach(conn => {
+                if (conn.open) {
+                    conn.send(messagePayload);
+                }
+            });
+
+            // Show it instantly on your own feed
             appendCardToFeed(myName, text, timeLabel);
             noteInput.value = '';
         });
@@ -176,6 +182,6 @@
             `;
             boardFeed.insertBefore(card, boardFeed.firstChild);
         }
-    </script>
+    </script> <!-- Make sure this is closing right before </body> -->
 </body>
 </html>
