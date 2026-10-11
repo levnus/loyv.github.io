@@ -91,24 +91,25 @@
         placeholder="Username (2–30 characters)" required>
       <label class="block text-sm muted">Profile picture</label>
 
-<div class="flex items-center gap-3">
-  <img
-    id="editAvatarPreview"
-    class="w-16 h-16 rounded-full object-cover hidden"
-    alt="Profile picture preview"
-  >
-  <input
-    id="editAvatar"
-    class="field"
-    type="file"
-    accept="image/png,image/jpeg,image/webp"
-  >
-</div>
+      <div class="flex items-center gap-3">
+        <img
+          id="editAvatarPreview"
+          class="w-16 h-16 rounded-full object-cover hidden"
+          alt="Profile picture preview"
+        >
+        <input
+          id="editAvatar"
+          class="field"
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+        >
+      </div>
 
-<p class="muted text-xs">JPG, PNG or WEBP · Maximum 2 MB</p>
+      <p class="muted text-xs">JPG, PNG or WEBP · Maximum 2 MB</p>
 
-<label class="block text-sm muted">Short bio</label>
-<textarea id="editBio" class="field" maxlength="250" rows="3"></textarea>
+      <label class="block text-sm muted">Short bio</label>
+      <textarea id="setupBio" class="field" maxlength="250" rows="3"
+        placeholder="Short bio (optional)"></textarea>
       <button class="primary w-full" type="submit">Create my profile</button>
     </form>
   </section>
@@ -158,32 +159,32 @@
   </section>
 
   <section id="profileView" class="wall-card hidden">
-  <div class="flex justify-between items-start gap-3">
-    <div class="flex items-start gap-3 min-w-0">
-      <div id="profileViewAvatar"
-           class="w-16 h-16 shrink-0 rounded-full bg-indigo-600
-                  flex items-center justify-center text-2xl font-bold">
-        ?
+    <div class="flex justify-between items-start gap-3">
+      <div class="flex items-start gap-3 min-w-0">
+        <div id="profileViewAvatar"
+             class="w-16 h-16 shrink-0 rounded-full bg-indigo-600
+                    flex items-center justify-center text-2xl font-bold">
+          ?
+        </div>
+
+        <div class="min-w-0">
+          <h2 id="profileViewName"
+              class="text-xl font-bold break-words"></h2>
+
+          <p id="profileViewBio"
+             class="muted text-sm mt-2 whitespace-pre-wrap break-words"></p>
+
+          <p id="profileViewCount"
+             class="text-indigo-300 text-sm mt-3">0 posts</p>
+        </div>
       </div>
 
-      <div class="min-w-0">
-        <h2 id="profileViewName"
-            class="text-xl font-bold break-words"></h2>
-
-        <p id="profileViewBio"
-           class="muted text-sm mt-2 whitespace-pre-wrap break-words"></p>
-
-        <p id="profileViewCount"
-           class="text-indigo-300 text-sm mt-3">0 posts</p>
-      </div>
+      <button id="closeProfileBtn" class="action">Close</button>
     </div>
 
-    <button id="closeProfileBtn" class="action">Close</button>
-  </div>
-
-  <h3 class="font-semibold mt-5 mb-3">Active posts</h3>
-  <div id="profilePosts" class="space-y-3"></div>
-</section>
+    <h3 class="font-semibold mt-5 mb-3">Active posts</h3>
+    <div id="profilePosts" class="space-y-3"></div>
+  </section>
 
   <section>
     <div class="flex justify-between items-center mb-3 px-1">
@@ -410,7 +411,22 @@
 
     $("myUsername").textContent = "@" + myProfile.username;
     $("myBio").textContent = myProfile.bio || "No bio yet.";
-    $("myAvatar").textContent = myProfile.username.slice(0, 1).toUpperCase();
+
+    const avatar = $("myAvatar");
+    avatar.replaceChildren();
+
+    if (myProfile.avatar_url) {
+      const img = make("img", "w-12 h-12 rounded-full object-cover");
+      img.src = myProfile.avatar_url;
+      img.alt = "Your profile picture";
+      avatar.className = "w-12 h-12 rounded-full overflow-hidden";
+      avatar.append(img);
+    } else {
+      avatar.className =
+        "w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center text-xl font-bold";
+      avatar.textContent = myProfile.username.slice(0, 1).toUpperCase();
+    }
+
     $("editUsername").value = myProfile.username;
     $("editBio").value = myProfile.bio || "";
 
@@ -418,6 +434,19 @@
     show("composer");
     show("editProfileBtn");
     show("setupPanel", false);
+  }
+
+  function startRealtime() {
+    if (channel) return;
+
+    channel = db.channel("echo-wall-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, async () => {
+        await refreshData();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, async () => {
+        await refreshData();
+      })
+      .subscribe();
   }
 
   async function ensureSession() {
@@ -444,7 +473,7 @@
     }
 
     const { data: profile, error } = await db.from("profiles")
-      .select("user_id, username, bio, created_at")
+      .select("user_id, username, bio, avatar_url, created_at")
       .eq("user_id", currentUser.id)
       .maybeSingle();
 
@@ -466,7 +495,7 @@
         .select("id, user_id, username, message, created_at, parent_post_id, image_url")
         .order("created_at", { ascending: false })
         .limit(200),
-      db.from("profiles").select("user_id, username, bio, created_at"),
+      db.from("profiles").select("user_id, username, bio, avatar_url, created_at"),
       db.from("likes").select("post_id, user_id")
     ]);
 
@@ -778,14 +807,18 @@
     const list = $("profilePosts");
     list.replaceChildren();
 
-    const posts = allPosts.filter(p => p.user_id === userId && p.parent_post_id == null);
+    const activePosts = allPosts.filter(p =>
+      p.user_id === userId &&
+      p.parent_post_id == null &&
+      new Date(p.created_at).getTime() + 24 * 60 * 60 * 1000 > Date.now()
+    );
 
-    if (!posts.length) {
-      list.append(make("p", "muted text-sm", "No posts yet."));
+    if (!activePosts.length) {
+      list.append(make("p", "muted text-sm", "No active posts yet."));
       return;
     }
 
-    posts.forEach(post => list.append(renderPost(post)));
+    activePosts.forEach(post => list.append(renderPost(post)));
   }
 
   async function openProfile(userId) {
@@ -800,9 +833,34 @@
     $("profileViewName").textContent = "@" + profile.username;
     $("profileViewBio").textContent = profile.bio || "No bio yet.";
 
+    const avatar = $("profileViewAvatar");
+    avatar.replaceChildren();
+
+    if (profile.avatar_url) {
+      const img = make("img", "w-16 h-16 rounded-full object-cover");
+      img.src = profile.avatar_url;
+      img.alt = "Profile picture";
+      avatar.className = "w-16 h-16 shrink-0 rounded-full overflow-hidden";
+      avatar.append(img);
+    } else {
+      avatar.className =
+        "w-16 h-16 shrink-0 rounded-full bg-indigo-600 flex items-center justify-center text-2xl font-bold";
+      avatar.textContent = profile.username.slice(0, 1).toUpperCase();
+    }
+
+    const postCount = allPosts.filter(p =>
+      p.user_id === userId && p.parent_post_id == null
+    ).length;
+
+    $("profileViewCount").textContent =
+      postCount + (postCount === 1 ? " post" : " posts");
+
     renderProfilePosts(userId);
     show("profileView");
-    $("profileView").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("profileView").scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
   }
 
   $("setupForm").addEventListener("submit", async event => {
@@ -829,8 +887,9 @@
       const { data, error } = await db.from("profiles").insert({
         user_id: currentUser.id,
         username,
-        bio
-      }).select("user_id, username, bio, created_at").single();
+        bio,
+        avatar_url: null
+      }).select("user_id, username, bio, avatar_url, created_at").single();
 
       if (error) throw error;
 
@@ -985,7 +1044,7 @@
       const { data, error } = await db.from("profiles")
         .update({ username, bio })
         .eq("user_id", currentUser.id)
-        .select("user_id, username, bio, created_at")
+        .select("user_id, username, bio, avatar_url, created_at")
         .single();
 
       if (error) throw error;
@@ -1034,123 +1093,31 @@
     }
   });
 
-  function startRealtime() {
-    if (channel) return;
-
-    channel = db.channel("echo-wall-live-feed")
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "posts"
-      }, async () => {
-        try {
-          await refreshData();
-        } catch (err) {
-          console.error("Post refresh failed:", err);
-        }
-      })
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "likes"
-      }, async () => {
-        try {
-          await refreshData();
-        } catch (err) {
-          console.error("Like refresh failed:", err);
-        }
-      })
-      .subscribe();
-  }
-
-  async function start() {
-    if (loading) return;
-
-    loading = true;
-    setStatus("Connecting to Echo Wall...");
-
-    try {
-      await ensureSession();
-      await loadSavedPosts();
-
-      if (myProfile) {
-        await refreshData();
-        startRealtime();
-        setStatus("Connected · live public wall", true);
-      }
-    } catch (err) {
-      console.error("Echo Wall connection error:", err);
-      setStatus("Connection failed · see error below");
-      $("feed").replaceChildren(
-        make("div", "wall-card text-sm text-rose-300",
-          "Couldn't connect: " + (err.message || String(err)))
-      );
-    } finally {
-      loading = false;
-    }
-  }
-
-  const INACTIVITY_TIMEOUT = 10 * 60 * 1000;
-  const TIMER_STORAGE_KEY = "echoWallTimerState";
-
-  function getTimerState() {
-    const stored = localStorage.getItem(TIMER_STORAGE_KEY);
-    if (!stored) return { totalSeconds: 0, lastActiveTime: Date.now() };
-
-    const state = JSON.parse(stored);
-    const timeSinceLastActive = Date.now() - state.lastActiveTime;
-
-    if (timeSinceLastActive > INACTIVITY_TIMEOUT) {
-      return { totalSeconds: 0, lastActiveTime: Date.now() };
-    }
-
-    return state;
-  }
-
-  function saveTimerState(totalSeconds) {
-    const state = {
-      totalSeconds,
-      lastActiveTime: Date.now()
-    };
-    localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(state));
-  }
-
-  let timerState = getTimerState();
-
-  function updateSiteTimer() {
-    const elapsed = timerState.totalSeconds;
-    const hours = Math.floor(elapsed / 3600);
-    const minutes = Math.floor((elapsed % 3600) / 60);
-    const seconds = elapsed % 60;
-    const format = n => String(n).padStart(2, "0");
-    const timer = $("siteTimer");
-
-    if (timer) {
-      timer.textContent = `${format(hours)}:${format(minutes)}:${format(seconds)}`;
-    }
-  }
-
-  function startTimer() {
-    updateSiteTimer();
+  async function init() {
+    updateSavedToggleBtn();
+    await ensureSession();
+    await loadSavedPosts();
+    await refreshData();
+    startRealtime();
     setInterval(() => {
-      timerState.totalSeconds++;
-      saveTimerState(timerState.totalSeconds);
-      updateSiteTimer();
+      const timer = $("siteTimer");
+      if (!timer || !currentUser) return;
+      const now = new Date();
+      const started = new Date(currentUser.created_at || Date.now());
+      const diff = Math.max(0, now.getTime() - started.getTime());
+      const totalSeconds = Math.floor(diff / 1000);
+      const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+      const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+      timer.textContent = `${hours}:${minutes}:${seconds}`;
     }, 1000);
   }
 
-  function trackActivity() {
-    timerState.lastActiveTime = Date.now();
-    saveTimerState(timerState.totalSeconds);
-  }
-
-  document.addEventListener("mousemove", trackActivity);
-  document.addEventListener("keypress", trackActivity);
-  document.addEventListener("click", trackActivity);
-
-  updateSavedToggleBtn();
-  start();
-  startTimer();
+  init().catch(err => {
+    console.error(err);
+    setStatus("Connection issue. Please refresh.");
+    alert(err.message);
+  });
 })();
 </script>
 </body>
