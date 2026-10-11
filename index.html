@@ -713,6 +713,41 @@
     }
   });
 
+
+if (post.user_id && post.user_id === currentUser?.id) {
+  const deleteBtn = make("button", "action", "🗑 Delete");
+  deleteBtn.classList.add("text-rose-400");
+
+  deleteBtn.addEventListener("click", async () => {
+    if (!requireUser()) return;
+
+    if (!confirm("Delete this post? Replies may also be deleted.")) return;
+
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = "Deleting...";
+
+    try {
+      const { error } = await db
+        .from("posts")
+        .delete()
+        .eq("id", post.id)
+        .eq("user_id", currentUser.id);
+
+      if (error) throw error;
+
+      await refreshData();
+      setStatus("Post deleted!", true);
+    } catch (err) {
+      alert("Couldn't delete post: " + err.message);
+      deleteBtn.disabled = false;
+      deleteBtn.textContent = "🗑 Delete";
+    }
+  });
+
+  actions.append(deleteBtn);
+}
+
+  
   function startRealtime() {
     if (channel) return;
 
