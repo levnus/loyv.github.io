@@ -214,10 +214,10 @@
   let channel = null;
   let loading = false;
   let showSavedOnly = false;
+  let savedPostIds = new Set();
   const SAVED_POSTS_KEY = "echoWallSavedPosts";
-  let savedPostIds = new Set(JSON.parse(localStorage.getItem(SAVED_POSTS_KEY) || "[]"));
 
-  function saveSavedPosts() {
+  function saveSavedPostsFallback() {
     localStorage.setItem(SAVED_POSTS_KEY, JSON.stringify([...savedPostIds]));
   }
 
@@ -225,25 +225,79 @@
     return savedPostIds.has(String(postId));
   }
 
-  function toggleSaved(postId) {
-    const key = String(postId);
-    if (savedPostIds.has(key)) {
-      savedPostIds.delete(key);
-    } else {
-      savedPostIds.add(key);
-    }
-    saveSavedPosts();
-    renderFeed();
-    if (!$("profileView").classList.contains("hidden")) {
-      const profileId = $("profileView").dataset.userId;
-      if (profileId) renderProfilePosts(profileId);
-    }
-  }
-
   function updateSavedToggleBtn() {
     const button = $("savedToggleBtn");
     if (!button) return;
     button.textContent = showSavedOnly ? "★ Saved only" : "☆ Saved";
+  }
+
+  async function loadSavedPosts() {
+    savedPostIds = new Set();
+
+    const localIds = JSON.parse(localStorage.getItem(SAVED_POSTS_KEY) || "[]");
+    localIds.forEach(id => savedPostIds.add(String(id)));
+
+    if (!currentUser?.id) return;
+
+    try {
+      const { data, error } = await db.from("saved_posts")
+        .select("post_id")
+        .eq("user_id", currentUser.id);
+
+      if (error) throw error;
+
+      (data || []).forEach(row => savedPostIds.add(String(row.post_id)));
+      saveSavedPostsFallback();
+    } catch (err) {
+      console.warn("saved_posts table unavailable, using local fallback:", err);
+      saveSavedPostsFallback();
+    }
+  }
+
+  async function toggleSaved(postId) {
+    if (!currentUser?.id) {
+      alert("Log in to save posts.");
+      return;
+    }
+
+    const key = String(postId);
+    const wasSaved = savedPostIds.has(key);
+
+    try {
+      if (wasSaved) {
+        const { error } = await db.from("saved_posts")
+          .delete()
+          .eq("user_id", currentUser.id)
+          .eq("post_id", postId);
+
+        if (error) throw error;
+        savedPostIds.delete(key);
+      } else {
+        const { error } = await db.from("saved_posts").insert({
+          user_id: currentUser.id,
+          post_id: postId
+        });
+
+        if (error) throw error;
+        savedPostIds.add(key);
+      }
+
+      saveSavedPostsFallback();
+      renderFeed();
+      if (!$("profileView").classList.contains("hidden")) {
+        const profileId = $("profileView").dataset.userId;
+        if (profileId) renderProfilePosts(profileId);
+      }
+    } catch (err) {
+      console.warn("saved_posts update failed, using local fallback:", err);
+      if (wasSaved) savedPostIds.delete(key); else savedPostIds.add(key);
+      saveSavedPostsFallback();
+      renderFeed();
+      if (!$("profileView").classList.contains("hidden")) {
+        const profileId = $("profileView").dataset.userId;
+        if (profileId) renderProfilePosts(profileId);
+      }
+    }
   }
 
   function setStatus(message, good = false) {
@@ -983,6 +1037,7 @@
 
     try {
       await ensureSession();
+      await loadSavedPosts();
 
       if (myProfile) {
         await refreshData();
