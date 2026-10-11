@@ -148,6 +148,15 @@
       <h2 class="text-xl font-bold">The Wall</h2>
       <button id="refreshBtn" class="action">↻ Refresh</button>
     </div>
+
+    <input
+      id="searchInput"
+      class="field mb-4"
+      type="search"
+      placeholder="🔍 Search posts or usernames..."
+      autocomplete="off"
+    />
+
     <div id="feed" class="space-y-4">
       <div class="wall-card muted text-sm text-center">Loading posts...</div>
     </div>
@@ -564,11 +573,26 @@
     const feed = $("feed");
     feed.replaceChildren();
 
-    const posts = allPosts.filter(p => p.parent_post_id == null);
+    const query = ($("searchInput")?.value || "").trim().toLowerCase();
+
+    const posts = allPosts.filter(post => {
+      if (post.parent_post_id != null) return false;
+
+      const profile = getProfile(post.user_id);
+      const username = profile?.username || post.username || "";
+
+      return (
+        (post.message || "").toLowerCase().includes(query) ||
+        username.toLowerCase().includes(query)
+      );
+    });
 
     if (!posts.length) {
-      feed.append(make("div", "wall-card muted text-sm text-center",
-        "No posts yet. Be the first to publish!"));
+      feed.append(make(
+        "div",
+        "wall-card muted text-sm text-center",
+        query ? "No posts match your search." : "No posts yet. Be the first to publish!"
+      ));
       return;
     }
 
@@ -808,6 +832,10 @@
   });
 
   $("closeProfileBtn").addEventListener("click", () => show("profileView", false));
+
+  $("searchInput").addEventListener("input", () => {
+    renderFeed();
+  });
 
   $("refreshBtn").addEventListener("click", async () => {
     const button = $("refreshBtn");
