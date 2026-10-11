@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Direct P2P Echo Wall</title>
-    <!-- FIXED: Complete absolute path to the Tailwind CSS engine -->
-    <script src="https://jsdelivr.net"></script>
-    <!-- FIXED: Complete absolute path to the PeerJS WebRTC network library -->
-    <script src="https://cloudflare.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
     </style>
@@ -72,116 +70,222 @@
         </div>
     </section>
 
-        <!-- Keep the script tags around the code! -->
-    <script>
-        const usernameInput = document.getElementById('usernameInput');
-        const setNameBtn = document.getElementById('setNameBtn');
-        const nameSection = document.getElementById('nameSection');
-        const peerSection = document.getElementById('peerSection');
-        const myPeerIdDisplay = document.getElementById('myPeerId');
-        const friendIdInput = document.getElementById('friendIdInput');
-        const connectBtn = document.getElementById('connectBtn');
-        const noteForm = document.getElementById('noteForm');
-        const noteInput = document.getElementById('noteInput');
-        const submitPostBtn = document.getElementById('submitPostBtn');
-        const boardFeed = document.getElementById('boardFeed');
-        const syncStatus = document.getElementById('syncStatus');
-        const emptyPrompt = document.getElementById('emptyPrompt');
 
-        let myName = "";
-        let peer = null;
-        let connections = []; // Array to store multiple direct connections
+<script>
+  // Replace these two values with your Supabase project details.
+  const SUPABASE_URL =
+  "https://qdncdhvhuhlwrksrxmeq.supabase.co";
 
-        setNameBtn.addEventListener('click', () => {
-            const name = usernameInput.value.trim();
-            if (!name) return alert('Enter a handle first!');
-            myName = name;
-            nameSection.innerHTML = `<p class="text-slate-300 font-medium">Chatting as: <span class="text-indigo-400 font-bold">@${myName}</span></p>`;
-            peerSection.classList.remove('hidden');
-            initP2PNetwork();
+  const SUPABASE_KEY =
+  "sb_publishable_BxFce1GWJtPN03dg8pRnLA_EkRk9-Sq";
+
+  const usernameInput = document.getElementById("usernameInput");
+  const setNameBtn = document.getElementById("setNameBtn");
+  const nameSection = document.getElementById("nameSection");
+  const peerSection = document.getElementById("peerSection");
+  const noteForm = document.getElementById("noteForm");
+  const noteInput = document.getElementById("noteInput");
+  const submitPostBtn = document.getElementById("submitPostBtn");
+  const boardFeed = document.getElementById("boardFeed");
+  const syncStatus = document.getElementById("syncStatus");
+  const emptyPrompt = document.getElementById("emptyPrompt");
+
+  let myName = "";
+  let supabase = null;
+  let channel = null;
+  const displayedPosts = new Set();
+
+  function setStatus(message, connected = false) {
+    syncStatus.replaceChildren();
+
+    const dot = document.createElement("span");
+    dot.className = "w-2 h-2 rounded-full " +
+      (connected ? "bg-emerald-500" : "bg-rose-500");
+
+    syncStatus.append(dot, document.createTextNode(" " + message));
+    syncStatus.className = "text-xs flex items-center gap-1 " +
+      (connected ? "text-emerald-400" : "text-rose-400");
+  }
+
+  function addPost(post, newestFirst = true) {
+    // Prevent duplicates from initial loading and realtime events.
+    if (displayedPosts.has(post.id)) return;
+    displayedPosts.add(post.id);
+
+    if (emptyPrompt) emptyPrompt.style.display = "none";
+
+    const card = document.createElement("div");
+    card.className =
+      "bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md transition-all";
+
+    const header = document.createElement("div");
+    header.className = "flex justify-between items-start mb-2";
+
+    const username = document.createElement("span");
+    username.className = "text-indigo-400 font-bold text-sm";
+    username.textContent = "@" + post.username;
+
+    const timestamp = document.createElement("span");
+    timestamp.className = "text-[10px] text-slate-500";
+
+    const date = new Date(post.created_at);
+    timestamp.textContent = Number.isNaN(date.getTime())
+      ? ""
+      : date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
         });
 
-        function initP2PNetwork() {
-            peer = new Peer();
+    header.append(username, timestamp);
 
-            peer.on('open', (id) => {
-                myPeerIdDisplay.textContent = id;
-            });
+    const message = document.createElement("p");
+    message.className = "text-slate-200 text-sm leading-relaxed";
+    message.style.whiteSpace = "pre-wrap";
+    message.style.overflowWrap = "anywhere";
+    message.textContent = post.message;
 
-            // Listen for incoming connection requests from any friends
-            peer.on('connection', (conn) => {
-                setupChatConnection(conn);
-            });
+    card.append(header, message);
 
-            peer.on('error', (err) => {
-                console.error("Network node connection error:", err);
-                myPeerIdDisplay.textContent = "Error assigning connection key.";
-            });
+    if (newestFirst) {
+      boardFeed.insertBefore(card, boardFeed.firstChild);
+    } else {
+      boardFeed.appendChild(card);
+    }
+  }
+
+  async function loadPosts() {
+    const { data, error } = await supabase
+      .from("posts")
+      .select("id, username, message, created_at")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) {
+      console.error("Could not load posts:", error.message);
+      setStatus("Could not load posts");
+      return;
+    }
+
+    // The database returns newest first, so append in reverse.
+    data.reverse().forEach(post => addPost(post, false));
+  }
+
+  function initSharedBoard() {
+    if (
+      !SUPABASE_URL.startsWith("https://") ||
+      SUPABASE_KEY === "YOUR_SUPABASE_PUBLISHABLE_KEY"
+    ) {
+      setStatus("Database setup required");
+      alert("Add your Supabase project URL and publishable key to the script.");
+      return;
+    }
+
+    supabase = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+    // Load posts already published by everyone.
+    loadPosts();
+
+    // Listen for posts published by other visitors.
+    channel = supabase
+      .channel("public-echo-wall-posts")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "posts"
+        },
+        payload => addPost(payload.new, true)
+      )
+      .subscribe(status => {
+        if (status === "SUBSCRIBED") {
+          setStatus("Live shared feed", true);
+        } else if (status === "CHANNEL_ERROR" ||
+                   status === "TIMED_OUT") {
+          setStatus("Live connection unavailable");
+          console.error("Realtime status:", status);
+        } else if (status === "CLOSED") {
+          setStatus("Feed disconnected");
         }
+      });
+  }
 
-        connectBtn.addEventListener('click', () => {
-            const friendId = friendIdInput.value.trim();
-            if (!friendId) return alert('Paste an ID first!');
+  setNameBtn.addEventListener("click", () => {
+    const name = usernameInput.value.trim();
 
-            connectBtn.textContent = 'Connecting...';
-            const conn = peer.connect(friendId);
-            setupChatConnection(conn);
-        });
+    if (!name) {
+      alert("Enter a username first!");
+      return;
+    }
 
-        function setupChatConnection(conn) {
-            // Save this connection to our array list
-            connections.push(conn);
+    if (name.length > 30) {
+      alert("Your username must be 30 characters or fewer.");
+      return;
+    }
 
-            conn.on('open', () => {
-                syncStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Linked with Network`;
-                submitPostBtn.removeAttribute('disabled');
-                submitPostBtn.textContent = "Broadcast to Network";
-                if(emptyPrompt) emptyPrompt.style.display = 'none';
-            });
+    myName = name;
 
-            conn.on('data', (data) => {
-                appendCardToFeed(data.username, data.message, data.timestamp);
-            });
-        }
+    // Safely update the existing name section.
+    const label = document.createElement("p");
+    label.className = "text-slate-300 font-medium";
 
-        noteForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const text = noteInput.value.trim();
-            if (!text) return;
+    const nameText = document.createElement("span");
+    nameText.className = "text-indigo-400 font-bold";
+    nameText.textContent = "@" + myName;
 
-            const timeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            const messagePayload = {
-                username: myName,
-                message: text,
-                timestamp: timeLabel
-            };
+    label.append(
+      document.createTextNode("Posting as: "),
+      nameText
+    );
 
-            // Loop through every connected browser tab and send them the note
-            connections.forEach(conn => {
-                if (conn.open) {
-                    conn.send(messagePayload);
-                }
-            });
+    nameSection.replaceChildren(label);
 
-            // Show it instantly on your own feed
-            appendCardToFeed(myName, text, timeLabel);
-            noteInput.value = '';
-        });
+    // Peer IDs are no longer needed.
+    peerSection.classList.add("hidden");
 
-        function appendCardToFeed(user, msg, time) {
-            if(emptyPrompt) emptyPrompt.style.display = 'none';
-            const card = document.createElement('div');
-            card.className = "bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md transition-all";
-            card.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-indigo-400 font-bold text-sm">@${user}</span>
-                    <span class="text-[10px] text-slate-500">${time}</span>
-                </div>
-                <p class="text-slate-200 text-sm leading-relaxed">${msg}</p>
-            `;
-            boardFeed.insertBefore(card, boardFeed.firstChild);
-        }
-    </script> <!-- Make sure this is closing right before </body> -->
+    submitPostBtn.disabled = false;
+    submitPostBtn.textContent = "Publish to Shared Wall";
+
+    initSharedBoard();
+  });
+
+  noteForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const message = noteInput.value.trim();
+
+    if (!myName || !supabase || !message) return;
+
+    if (message.length > 250) {
+      alert("Posts must be 250 characters or fewer.");
+      return;
+    }
+
+    submitPostBtn.disabled = true;
+    submitPostBtn.textContent = "Publishing...";
+
+    const { error } = await supabase
+      .from("posts")
+      .insert({
+        username: myName,
+        message: message
+      });
+
+    if (error) {
+      console.error("Could not publish post:", error.message);
+      alert("Your post could not be published. Please try again.");
+      setStatus("Could not publish post");
+    } else {
+      noteInput.value = "";
+      // The realtime event adds the post to the feed.
+    }
+
+    submitPostBtn.disabled = false;
+    submitPostBtn.textContent = "Publish to Shared Wall";
+  });
+</script>
 </body>
 </html>
