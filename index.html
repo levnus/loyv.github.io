@@ -269,7 +269,7 @@
     const actions = make("div", "flex flex-wrap items-center gap-2 mt-4");
 
     const likeBtn = make("button", "action",
-      (liked ? "♥" : "♡") + " Like · " + likeRows.length);
+      (liked ? "▲" : "△") + " Like · " + likeRows.length);
 
     likeBtn.addEventListener("click", async () => {
       if (!currentUser?.id) {
