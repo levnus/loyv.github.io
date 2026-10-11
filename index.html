@@ -109,8 +109,16 @@
   <section id="composer" class="wall-card hidden">
     <h2 class="font-semibold mb-3">What's on your mind?</h2>
     <form id="postForm" class="space-y-3">
-      <textarea id="postMessage" class="field" maxlength="250" rows="5"
-        placeholder="Write something..."></textarea>
+      <div>
+  <div class="flex gap-2 mb-2">
+    <button type="button" id="boldBtn" class="action" title="Bold text">
+      <b>B</b>
+    </button>
+  </div>
+
+  <textarea id="postMessage" class="field" maxlength="1000" rows="5"
+    placeholder="Write something..."></textarea>
+</div>
       <div class="flex flex-wrap items-center justify-between gap-3">
         <label class="action cursor-pointer">
           📷 Add image
@@ -800,6 +808,20 @@
 
   start();
 })();
+  document.getElementById("boldBtn").addEventListener("click", () => {
+  const box = document.getElementById("postMessage");
+  const start = box.selectionStart;
+  const end = box.selectionEnd;
+
+  if (start === end) {
+    alert("Select the text you want to bold first.");
+    return;
+  }
+
+  const selected = box.value.slice(start, end);
+  box.setRangeText(`**${selected}**`, start, end, "select");
+  box.focus();
+});
 </script>
 </body>
 </html>
