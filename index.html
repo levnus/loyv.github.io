@@ -947,13 +947,38 @@ top.append(author);
     }
   }
 
-  // Time spent on Echo Wall during this page visit.
-  const siteVisitStartedAt = Date.now();
+  // Persistent timer with 10-minute inactivity reset.
+  const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+  const TIMER_STORAGE_KEY = "echoWallTimerState";
+
+  function getTimerState() {
+    const stored = localStorage.getItem(TIMER_STORAGE_KEY);
+    if (!stored) return { totalSeconds: 0, lastActiveTime: Date.now() };
+
+    const state = JSON.parse(stored);
+    const timeSinceLastActive = Date.now() - state.lastActiveTime;
+
+    // If inactive for 10 minutes, reset the timer
+    if (timeSinceLastActive > INACTIVITY_TIMEOUT) {
+      return { totalSeconds: 0, lastActiveTime: Date.now() };
+    }
+
+    return state;
+  }
+
+  function saveTimerState(totalSeconds) {
+    const state = {
+      totalSeconds,
+      lastActiveTime: Date.now()
+    };
+    localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(state));
+  }
+
+  let timerState = getTimerState();
+  let timerIntervalId = null;
 
   function updateSiteTimer() {
-    const elapsed = Math.floor(
-      (Date.now() - siteVisitStartedAt) / 1000
-    );
+    const elapsed = timerState.totalSeconds;
 
     const hours = Math.floor(elapsed / 3600);
     const minutes = Math.floor((elapsed % 3600) / 60);
@@ -968,10 +993,29 @@ top.append(author);
     }
   }
 
-  updateSiteTimer();
-  setInterval(updateSiteTimer, 1000);
+  function startTimer() {
+    updateSiteTimer();
+
+    timerIntervalId = setInterval(() => {
+      timerState.totalSeconds++;
+      saveTimerState(timerState.totalSeconds);
+      updateSiteTimer();
+    }, 1000);
+  }
+
+  // Track page activity to update last active time
+  function trackActivity() {
+    timerState.lastActiveTime = Date.now();
+    saveTimerState(timerState.totalSeconds);
+  }
+
+  document.addEventListener("mousemove", trackActivity);
+  document.addEventListener("keypress", trackActivity);
+  document.addEventListener("click", trackActivity);
 
   start();
+
+  startTimer();
 })();
 </script>
 </body>
