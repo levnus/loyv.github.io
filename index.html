@@ -1,140 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Direct P2P Echo Wall</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body { background-color: #0f172a; color: #f8fafc; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Echo Wall</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { background-color: #0f172a; color: #f8fafc; }
+  </style>
 </head>
 <body class="font-sans min-h-screen flex flex-col items-center p-6">
 
-    <!-- Header Section -->
-    <header class="text-center my-6 max-w-xl">
-        <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400 mb-2">P2P Echo Wall</h1>
-        <p class="text-sm text-slate-400">Connect directly with a friend over the network without any databases.</p>
-    </header>
+  <header class="text-center my-6 max-w-xl">
+    <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400 mb-2">Echo Wall</h1>
+    <p class="text-sm text-slate-400">A shared wall where everyone can publish and see posts.</p>
+  </header>
 
-    <!-- Connection & Handle Manager Panel -->
-    <section class="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl mb-6 flex flex-col gap-4">
-        <!-- Step 1: Set Name -->
-        <div id="nameSection">
-            <h3 class="text-sm font-semibold text-slate-400 mb-2">1. Choose Your Handle</h3>
-            <div class="flex gap-3">
-                <input type="text" id="usernameInput" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500" placeholder="Enter your display name...">
-                <button id="setNameBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-md">Set Name</button>
-            </div>
-        </div>
+  <section class="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl mb-6">
+    <div id="nameSection">
+      <h3 class="text-sm font-semibold text-slate-400 mb-2">Choose Your Username</h3>
+      <div class="flex gap-3">
+        <input type="text" id="usernameInput"
+          class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100"
+          placeholder="Enter your display name..." maxlength="30">
+        <button id="setNameBtn"
+          class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl">
+          Set Name
+        </button>
+      </div>
+    </div>
+  </section>
 
-        <!-- Step 2: Peer Pairing Controls -->
-        <div id="peerSection" class="hidden border-t border-slate-800 pt-4 flex flex-col gap-4">
-            <div>
-                <h3 class="text-sm font-semibold text-slate-400 mb-1">2. Your Private Connection ID:</h3>
-                <div class="flex items-center gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                    <span id="myPeerId" class="text-indigo-400 font-mono font-bold tracking-wider select-all">Generating ID...</span>
-                    <span class="text-[10px] text-slate-500 ml-auto">(Share this code with your friend)</span>
-                </div>
-            </div>
+  <main class="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+    <form id="noteForm" class="flex flex-col gap-4">
+      <textarea id="noteInput" rows="3" maxlength="250"
+        class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-100"
+        placeholder="Write a message for everyone..." required></textarea>
+      <button type="submit" id="submitPostBtn" disabled
+        class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl disabled:opacity-40">
+        Choose a username first
+      </button>
+    </form>
+  </main>
 
-            <div class="border-t border-slate-800/60 pt-3">
-                <h3 class="text-sm font-semibold text-slate-400 mb-2">3. Connect to a Friend</h3>
-                <div class="flex gap-3">
-                    <input type="text" id="friendIdInput" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono" placeholder="Paste friend's connection ID...">
-                    <button id="connectBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-md">Link Up</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Post Input Form -->
-    <main class="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
-        <form id="noteForm" class="flex flex-col gap-4">
-            <textarea id="noteInput" rows="3" maxlength="250" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none transition-colors" placeholder="Type a message to push to the wall..." required></textarea>
-            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed" id="submitPostBtn" disabled>Set up pairing above first</button>
-        </form>
-    </main>
-
-    <!-- Chat Feed Board -->
-    <section class="w-full max-w-xl mt-8">
-        <div class="flex justify-between items-center mb-4 px-2">
-            <h2 class="text-lg font-semibold text-slate-400">Live P2P Board Feed</h2>
-            <span id="syncStatus" class="text-xs text-rose-400 flex items-center gap-1">
-                <span class="w-2 h-2 rounded-full bg-rose-500"></span> Unlinked
-            </span>
-        </div>
-        <div id="boardFeed" class="space-y-4">
-            <div id="emptyPrompt" class="text-center py-8 text-slate-600 text-sm">No live messages streaming yet. Link with a friend to start chatting!</div>
-        </div>
-    </section>
-
+  <section class="w-full max-w-xl mt-8">
+    <div class="flex justify-between items-center mb-4 px-2">
+      <h2 class="text-lg font-semibold text-slate-400">Shared Wall Feed</h2>
+      <span id="syncStatus" class="text-xs text-rose-400">Not connected</span>
+    </div>
+    <div id="boardFeed" class="space-y-4">
+      <div id="emptyPrompt" class="text-center py-8 text-slate-500 text-sm">
+        No posts yet. Be the first to publish!
+      </div>
+    </div>
+  </section>
 
 <script>
-  // Replace these two values with your Supabase project details.
-  const SUPABASE_URL =
-  "https://qdncdhvhuhlwrksrxmeq.supabase.co";
-
-  const SUPABASE_KEY =
-  "sb_publishable_BxFce1GWJtPN03dg8pRnLA_EkRk9-Sq";
+  const SUPABASE_URL = "https://qdncdhvhuhlwrksrxmeq.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_BxFce1GWJtPN03dg8pRnLA_EkRk9-Sq";
 
   const usernameInput = document.getElementById("usernameInput");
   const setNameBtn = document.getElementById("setNameBtn");
   const nameSection = document.getElementById("nameSection");
-  const peerSection = document.getElementById("peerSection");
   const noteForm = document.getElementById("noteForm");
   const noteInput = document.getElementById("noteInput");
   const submitPostBtn = document.getElementById("submitPostBtn");
   const boardFeed = document.getElementById("boardFeed");
   const syncStatus = document.getElementById("syncStatus");
-  const emptyPrompt = document.getElementById("emptyPrompt");
 
   let myName = "";
-  let supabase = null;
+  let db = null;
   let channel = null;
   const displayedPosts = new Set();
 
   function setStatus(message, connected = false) {
-    syncStatus.replaceChildren();
-
-    const dot = document.createElement("span");
-    dot.className = "w-2 h-2 rounded-full " +
-      (connected ? "bg-emerald-500" : "bg-rose-500");
-
-    syncStatus.append(dot, document.createTextNode(" " + message));
-    syncStatus.className = "text-xs flex items-center gap-1 " +
+    syncStatus.textContent = message;
+    syncStatus.className = "text-xs " +
       (connected ? "text-emerald-400" : "text-rose-400");
   }
 
-  function addPost(post, newestFirst = true) {
-    // Prevent duplicates from initial loading and realtime events.
-    if (displayedPosts.has(post.id)) return;
+  function addPost(post) {
+    if (!post || displayedPosts.has(post.id)) return;
     displayedPosts.add(post.id);
 
-    if (emptyPrompt) emptyPrompt.style.display = "none";
+    const emptyPrompt = document.getElementById("emptyPrompt");
+    if (emptyPrompt) emptyPrompt.remove();
 
-    const card = document.createElement("div");
-    card.className =
-      "bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md transition-all";
+    const card = document.createElement("article");
+    card.className = "bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md";
 
     const header = document.createElement("div");
     header.className = "flex justify-between items-start mb-2";
 
-    const username = document.createElement("span");
-    username.className = "text-indigo-400 font-bold text-sm";
+    const username = document.createElement("strong");
+    username.className = "text-indigo-400 text-sm";
     username.textContent = "@" + post.username;
 
     const timestamp = document.createElement("span");
-    timestamp.className = "text-[10px] text-slate-500";
-
+    timestamp.className = "text-xs text-slate-500";
     const date = new Date(post.created_at);
     timestamp.textContent = Number.isNaN(date.getTime())
       ? ""
-      : date.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit"
-        });
+      : date.toLocaleString();
 
     header.append(username, timestamp);
 
@@ -145,79 +113,84 @@
     message.textContent = post.message;
 
     card.append(header, message);
-
-    if (newestFirst) {
-      boardFeed.insertBefore(card, boardFeed.firstChild);
-    } else {
-      boardFeed.appendChild(card);
-    }
+    boardFeed.insertBefore(card, boardFeed.firstChild);
   }
 
   async function loadPosts() {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("posts")
       .select("id, username, message, created_at")
       .order("created_at", { ascending: false })
       .limit(100);
 
     if (error) {
-      console.error("Could not load posts:", error.message);
+      console.error("Load posts error:", error);
       setStatus("Could not load posts");
+      alert("Could not load posts: " + error.message);
       return;
     }
 
-    // The database returns newest first, so append in reverse.
-    data.reverse().forEach(post => addPost(post, false));
+    data.forEach(addPost);
   }
 
-  function initSharedBoard() {
-    if (
-      !SUPABASE_URL.startsWith("https://") ||
-      SUPABASE_KEY === "YOUR_SUPABASE_PUBLISHABLE_KEY"
-    ) {
-      setStatus("Database setup required");
-      alert("Add your Supabase project URL and publishable key to the script.");
+  async function initSharedBoard() {
+    if (db) return;
+
+    if (!window.supabase || !window.supabase.createClient) {
+      setStatus("Supabase library failed");
+      alert("Supabase library failed to load. Check your internet connection and reload.");
       return;
     }
 
-    supabase = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
+    try {
+      setStatus("Connecting to database...");
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Load posts already published by everyone.
-    loadPosts();
+      const { error } = await db.from("posts").select("id").limit(1);
 
-    // Listen for posts published by other visitors.
-    channel = supabase
-      .channel("public-echo-wall-posts")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "posts"
-        },
-        payload => addPost(payload.new, true)
-      )
-      .subscribe(status => {
-        if (status === "SUBSCRIBED") {
-          setStatus("Live shared feed", true);
-        } else if (status === "CHANNEL_ERROR" ||
-                   status === "TIMED_OUT") {
-          setStatus("Live connection unavailable");
-          console.error("Realtime status:", status);
-        } else if (status === "CLOSED") {
-          setStatus("Feed disconnected");
-        }
-      });
+      if (error) {
+        console.error("Database error:", error);
+        setStatus("Database error");
+        alert("Database error: " + error.message);
+        db = null;
+        return;
+      }
+
+      await loadPosts();
+
+      channel = db
+        .channel("echo-wall-live-feed")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "posts" },
+          (payload) => addPost(payload.new)
+        )
+        .subscribe((status, error) => {
+          console.log("Realtime status:", status, error || "");
+
+          if (status === "SUBSCRIBED") {
+            setStatus("Live shared feed", true);
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            setStatus("Live connection failed");
+            console.error("Realtime error:", error);
+            alert("Live updates failed. Check that posts is enabled in Supabase Realtime.");
+          } else if (status === "CLOSED") {
+            setStatus("Feed disconnected");
+          }
+        });
+    } catch (error) {
+      console.error("Connection error:", error);
+      setStatus("Connection failed");
+      alert("Connection failed: " + (error.message || String(error)));
+      db = null;
+    }
   }
 
-  setNameBtn.addEventListener("click", () => {
+  setNameBtn.addEventListener("click", async () => {
     const name = usernameInput.value.trim();
 
     if (!name) {
-      alert("Enter a username first!");
+      alert("Please enter a username first.");
       return;
     }
 
@@ -228,64 +201,54 @@
 
     myName = name;
 
-    // Safely update the existing name section.
     const label = document.createElement("p");
     label.className = "text-slate-300 font-medium";
-
-    const nameText = document.createElement("span");
-    nameText.className = "text-indigo-400 font-bold";
-    nameText.textContent = "@" + myName;
-
-    label.append(
-      document.createTextNode("Posting as: "),
-      nameText
-    );
-
+    label.textContent = "Posting as: @" + myName;
     nameSection.replaceChildren(label);
-
-    // Peer IDs are no longer needed.
-    peerSection.classList.add("hidden");
 
     submitPostBtn.disabled = false;
     submitPostBtn.textContent = "Publish to Shared Wall";
 
-    initSharedBoard();
+    await initSharedBoard();
   });
 
-  noteForm.addEventListener("submit", async event => {
+  noteForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const message = noteInput.value.trim();
 
-    if (!myName || !supabase || !message) return;
-
-    if (message.length > 250) {
-      alert("Posts must be 250 characters or fewer.");
+    if (!myName) {
+      alert("Please set a username first.");
       return;
     }
+
+    if (!db) {
+      alert("The feed is not connected yet. Check the connection status above.");
+      return;
+    }
+
+    if (!message) return;
 
     submitPostBtn.disabled = true;
     submitPostBtn.textContent = "Publishing...";
 
-    const { error } = await supabase
-      .from("posts")
-      .insert({
-        username: myName,
-        message: message
-      });
+    const { error } = await db.from("posts").insert({
+      username: myName,
+      message: message
+    });
 
     if (error) {
-      console.error("Could not publish post:", error.message);
-      alert("Your post could not be published. Please try again.");
-      setStatus("Could not publish post");
+      console.error("Publish error:", error);
+      alert("Could not publish: " + error.message);
+      setStatus("Publish failed");
     } else {
       noteInput.value = "";
-      // The realtime event adds the post to the feed.
     }
 
     submitPostBtn.disabled = false;
     submitPostBtn.textContent = "Publish to Shared Wall";
   });
 </script>
+
 </body>
 </html>
