@@ -475,7 +475,7 @@ isAdmin = !!adminRecord;
         .select("id, user_id, username, message, created_at, parent_post_id, image_url, pinned")
         .order("created_at", { ascending: false })
         .limit(200),
-      db.from("profiles").select("id, user_id, username, message, created_at, parent_post_id, image_url, pinned"),
+      db.from("profiles").select("user_id, username, bio, avatar_url, created_at"),
       db.from("likes").select("post_id, user_id")
     ]);
 
