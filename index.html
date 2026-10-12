@@ -554,9 +554,14 @@ isAdmin = !!adminRecord;
       ? make("span", "font-semibold text-sm text-slate-200", "Anonymous")
       : profileButton(post.user_id, post.username);
 
-    author.append(authorName);
-    author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
+     author.append(authorName);
 
+if (isAdmin && !isAnonymousPost) {
+  author.append(make("span", "ml-2 text-xs font-bold text-amber-400", "👑 Admin"));
+}
+
+author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
+    
     const countdown = make("p", "muted text-xs mt-1", timeLeftText(post.created_at));
     countdown.dataset.expiresAt = new Date(post.created_at).getTime() + 24 * 60 * 60 * 1000;
     author.append(countdown);
