@@ -211,6 +211,7 @@
 
   let currentUser = null;
   let myProfile = null;
+  let isAdmin = false;
   let selectedImage = null;
   let allPosts = [];
   let allProfiles = [];
@@ -334,6 +335,15 @@
       alert("Your session isn't ready. Refresh the page and wait until Echo Wall connects.");
       return false;
     }
+    const { data: adminRecord, error: adminError } = await db
+  .from("site_admins")
+  .select("user_id")
+  .eq("user_id", currentUser.id)
+  .maybeSingle();
+
+if (adminError) throw adminError;
+
+isAdmin = !!adminRecord;
     if (!myProfile) {
       alert("Please create your username profile first.");
       return false;
@@ -464,7 +474,7 @@
         .select("id, user_id, username, message, created_at, parent_post_id, image_url")
         .order("created_at", { ascending: false })
         .limit(200),
-      db.from("profiles").select("user_id, username, bio, avatar_url, created_at"),
+      db.from("profiles").select("id, user_id, username, message, created_at, parent_post_id, image_url, pinned"),
       db.from("likes").select("post_id, user_id")
     ]);
 
@@ -617,7 +627,7 @@
     });
     actions.append(saveBtn);
 
-    if (post.user_id && post.user_id === currentUser?.id) {
+        if (isAdmin || (post.user_id && post.user_id === currentUser?.id)) {
       const deleteBtn = make("button", "action text-rose-400", "🗑 Delete");
 
       deleteBtn.addEventListener("click", async () => {
@@ -628,10 +638,20 @@
         deleteBtn.textContent = "Deleting...";
 
         try {
-          const { error } = await db.from("posts")
-            .delete()
-            .eq("id", post.id)
-            .eq("user_id", currentUser.id);
+          let error;
+
+          if (isAdmin) {
+            const result = await db.rpc("admin_delete_post", {
+              p_post_id: post.id
+            });
+            error = result.error;
+          } else {
+            const result = await db.from("posts")
+              .delete()
+              .eq("id", post.id)
+              .eq("user_id", currentUser.id);
+            error = result.error;
+          }
 
           if (error) throw error;
 
@@ -645,6 +665,36 @@
       });
 
       actions.append(deleteBtn);
+    }
+
+    if (isAdmin) {
+      const pinBtn = make(
+        "button",
+        "action text-indigo-300",
+        post.pinned ? "📌 Unpin" : "📌 Pin"
+      );
+
+      pinBtn.addEventListener("click", async () => {
+        pinBtn.disabled = true;
+
+        try {
+          const { error } = await db.rpc("admin_set_post_pinned", {
+            p_post_id: post.id,
+            p_pinned: !post.pinned
+          });
+
+          if (error) throw error;
+
+          await refreshData();
+          setStatus(post.pinned ? "Post unpinned!" : "Post pinned!", true);
+        } catch (err) {
+          alert("Couldn't change pin status: " + err.message);
+        } finally {
+          pinBtn.disabled = false;
+        }
+      });
+
+      actions.append(pinBtn);
     }
 
     let replyBtn = null;
@@ -1088,11 +1138,6 @@
     alert(err.message);
   });
 })();
-  JSON.parse(
-  localStorage.getItem(
-    Object.keys(localStorage).find(k => k.includes("auth-token"))
-  )
-).user.id
 </script>
 </body>
 </html>
