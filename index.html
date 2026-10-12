@@ -825,7 +825,15 @@ author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
       return;
     }
 
-    posts.forEach(post => feed.append(renderPost(post)));
+    posts.sort((a, b) => {
+  if (Boolean(a.pinned) !== Boolean(b.pinned)) {
+    return a.pinned ? -1 : 1;
+  }
+
+  return new Date(b.created_at) - new Date(a.created_at);
+});
+
+posts.forEach(post => feed.append(renderPost(post)));
   }
 
   function renderProfilePosts(userId) {
