@@ -582,10 +582,6 @@ isAdmin = !!adminRecord;
 
      author.append(authorName);
 
-if (isAdmin && !isAnonymousPost) {
-  author.append(make("span", "ml-2 text-xs font-bold text-amber-400", "👑 Admin"));
-}
-
 author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
     
     const countdown = make("p", "muted text-xs mt-1", timeLeftText(post.created_at));
