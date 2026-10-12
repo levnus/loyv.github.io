@@ -331,10 +331,18 @@
   }
 
   function requireUser() {
-    if (!currentUser || !currentUser.id) {
-      alert("Your session isn't ready. Refresh the page and wait until Echo Wall connects.");
-      return false;
-    }
+  if (!currentUser || !currentUser.id) {
+    alert("Your session isn't ready. Refresh the page and wait until Echo Wall connects.");
+    return false;
+  }
+
+  if (!myProfile) {
+    alert("Please create your username profile first.");
+    return false;
+  }
+
+  return true;
+}
     const { data: adminRecord, error: adminError } = await db
   .from("site_admins")
   .select("user_id")
@@ -450,6 +458,14 @@ isAdmin = !!adminRecord;
     if (!currentUser || !currentUser.id) {
       throw new Error("Supabase did not return a user session. Please refresh.");
     }
+    const { data: adminRecord, error: adminError } = await db
+  .from("site_admins")
+  .select("user_id")
+  .eq("user_id", currentUser.id)
+  .maybeSingle();
+
+if (adminError) throw adminError;
+isAdmin = !!adminRecord;
 
     const { data: profile, error } = await db.from("profiles")
       .select("user_id, username, bio, avatar_url, created_at")
@@ -471,7 +487,7 @@ isAdmin = !!adminRecord;
   async function refreshData() {
     const [postsRes, profilesRes, likesRes] = await Promise.all([
       db.from("posts")
-        .select("id, user_id, username, message, created_at, parent_post_id, image_url")
+        .select("id, user_id, username, message, created_at, parent_post_id, image_url, pinned")
         .order("created_at", { ascending: false })
         .limit(200),
       db.from("profiles").select("id, user_id, username, message, created_at, parent_post_id, image_url, pinned"),
