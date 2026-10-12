@@ -1088,6 +1088,11 @@
     alert(err.message);
   });
 })();
+  JSON.parse(
+  localStorage.getItem(
+    Object.keys(localStorage).find(k => k.includes("auth-token"))
+  )
+).user.id
 </script>
 </body>
 </html>
