@@ -343,6 +343,14 @@
 
   return true;
 }
+
+  if (!myProfile) {
+    alert("Please create your username profile first.");
+    return false;
+  }
+
+  return true;
+}
     const { data: adminRecord, error: adminError } = await db
   .from("site_admins")
   .select("user_id")
