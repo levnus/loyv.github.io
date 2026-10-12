@@ -363,20 +363,46 @@ const boldBtn = $("boldBtn");
   }
 
   function appendFormattedText(element, text) {
-    const parts = String(text || "").split(/(\*\*[\s\S]+?\*\*)/g);
+  const parts = String(text || "").split(/(\*\*[\s\S]+?\*\*|@[a-zA-Z0-9_]{2,30})/g);
 
-    parts.forEach(part => {
-      const match = part.match(/^\*\*([\s\S]+)\*\*$/);
+  parts.forEach(part => {
+    const boldMatch = part.match(/^\*\*([\s\S]+)\*\*$/);
 
-      if (match) {
-        const bold = document.createElement("strong");
-        bold.textContent = match[1];
-        element.append(bold);
+    if (boldMatch) {
+      const bold = document.createElement("strong");
+      bold.textContent = boldMatch[1];
+      element.append(bold);
+      return;
+    }
+
+    const mentionMatch = part.match(/^@([a-zA-Z0-9_]{2,30})$/);
+
+    if (mentionMatch) {
+      const username = mentionMatch[1];
+      const profile = allProfiles.find(
+        p => p.username.toLowerCase() === username.toLowerCase()
+      );
+
+      if (profile) {
+        const mention = make(
+          "button",
+          "text-indigo-300 font-bold hover:underline",
+          "@" + profile.username
+        );
+
+        mention.type = "button";
+        mention.addEventListener("click", () => openProfile(profile.user_id));
+        element.append(mention);
       } else {
         element.append(document.createTextNode(part));
       }
-    });
-  }
+
+      return;
+    }
+
+    element.append(document.createTextNode(part));
+  });
+}
 
   function renderMyProfile() {
     if (!myProfile) return;
