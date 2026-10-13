@@ -587,13 +587,34 @@ isAdmin = !!adminRecord;
     const top = make("div", "flex justify-between items-start gap-3");
     const author = make("div", "min-w-0");
 
+const avatar = make("div", "w-10 h-10 rounded-full overflow-hidden bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shrink-0");
+const postProfile = (profiles || []).find(p => p.user_id === post.user_id);
+
+if (postProfile?.avatar_url && String(post.username || "").toLowerCase() !== "anonymous") {
+  const avatarImg = document.createElement("img");
+  avatarImg.src = postProfile.avatar_url;
+  avatarImg.alt = "";
+  avatarImg.className = "w-full h-full object-cover";
+  avatar.append(avatarImg);
+} else {
+  avatar.textContent = String(post.username || "?").toLowerCase() === "anonymous"
+    ? "?"
+    : String(post.username || "?").charAt(0).toUpperCase();
+}
+    
     const isAnonymousPost = String(post.username || "").toLowerCase() === "anonymous";
     const authorName = isAnonymousPost
       ? make("span", "font-semibold text-sm text-slate-200", "Anonymous")
       : profileButton(post.user_id, post.username);
 
-     author.append(authorName);
+     const authorRow = make("div", "flex items-center gap-3");
+authorRow.append(avatar);
 
+const authorDetails = make("div", "min-w-0");
+authorDetails.append(authorName);
+authorRow.append(authorDetails);
+
+author.append(authorRow);
 author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
     
     const countdown = make("p", "muted text-xs mt-1", timeLeftText(post.created_at));
