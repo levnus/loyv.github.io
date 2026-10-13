@@ -14,7 +14,7 @@
 
   <style>
     body {
-  background: color-mix(in srgb, var(--theme-color, #6366f1) 35%, #0f172a);
+  background: color-mix(in srgb, var(--theme-color, #6366f1) 55%, #0f172a);
   color: white;
   font-family: 'Sniglet', system-ui, sans-serif;
   transition: background 0.3s ease;
@@ -51,7 +51,9 @@
 .primary:hover {
   background: var(--theme-hover, #4f46e5);
 }
-    .primary:hover { background: #6366f1; }
+    .primary:hover {
+  background: var(--theme-hover, #4f46e5);
+    }
     .field {
       width: 100%;
       background: #020617;
