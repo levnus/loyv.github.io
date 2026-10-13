@@ -21,11 +21,12 @@
 }
     input, textarea { color-scheme: dark; }
     .wall-card {
-      background: #111c30;
-      border: 1px solid #26334a;
-      border-radius: 16px;
-      padding: 16px;
-    }
+  background: color-mix(in srgb, var(--theme-color, #6366f1) 8%, #111c30);
+  border: 1px solid color-mix(in srgb, var(--theme-color, #6366f1) 25%, #26334a);
+  border-radius: 16px;
+  padding: 16px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
     .muted { color: #94a3b8; }
     .action {
   background: #1e293b;
