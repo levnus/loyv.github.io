@@ -66,6 +66,33 @@
       border-left: 2px solid #334155;
       padding-left: 12px;
     }
+    /* Echo Wall theme colors */
+:root {
+  --theme-color: #6366f1;
+  --theme-hover: #4f46e5;
+}
+
+button,
+.action {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+button:not(.theme-option),
+.action {
+  --tw-bg-opacity: 1;
+}
+
+.theme-accent {
+  color: var(--theme-color) !important;
+}
+
+.theme-accent-bg {
+  background-color: var(--theme-color) !important;
+}
+
+.theme-accent-border {
+  border-color: var(--theme-color) !important;
+}
   </style>
 </head>
 
@@ -117,6 +144,18 @@
     class="hidden"
   >
   <p class="text-xs muted mt-2">JPG, PNG, WebP or GIF · Maximum 5 MB</p>
+          <div class="mt-4">
+  <p class="text-sm font-semibold mb-2">🎨 Theme color</p>
+  <div class="flex flex-wrap gap-3">
+    <button type="button" class="theme-option w-8 h-8 rounded-full border-2 border-white" data-theme="#6366f1" style="background:#6366f1" aria-label="Indigo theme"></button>
+    <button type="button" class="theme-option w-8 h-8 rounded-full border-2 border-white" data-theme="#ec4899" style="background:#ec4899" aria-label="Pink theme"></button>
+    <button type="button" class="theme-option w-8 h-8 rounded-full border-2 border-white" data-theme="#14b8a6" style="background:#14b8a6" aria-label="Teal theme"></button>
+    <button type="button" class="theme-option w-8 h-8 rounded-full border-2 border-white" data-theme="#f97316" style="background:#f97316" aria-label="Orange theme"></button>
+    <button type="button" class="theme-option w-8 h-8 rounded-full border-2 border-white" data-theme="#eab308" style="background:#eab308" aria-label="Gold theme"></button>
+    <button type="button" class="theme-option w-8 h-8 rounded-full border-2 border-white" data-theme="#22c55e" style="background:#22c55e" aria-label="Green theme"></button>
+    <button type="button" class="theme-option w-8 h-8 rounded-full border-2 border-white" data-theme="#3b82f6" style="background:#3b82f6" aria-label="Blue theme"></button>
+  </div>
+</div>
 </div>
       </div>
     </div>
@@ -1255,7 +1294,83 @@ posts.forEach(post => feed.append(renderPost(post)));
     event.target.value = "";
   }
 });
-  
+  // Echo Wall theme color settings
+(function setupThemeColors() {
+  const defaultColor = "#6366f1";
+
+  const allowedColors = [
+    "#6366f1",
+    "#ec4899",
+    "#14b8a6",
+    "#f97316",
+    "#eab308",
+    "#22c55e",
+    "#3b82f6"
+  ];
+
+  function applyTheme(color) {
+    if (!allowedColors.includes(color)) {
+      color = defaultColor;
+    }
+
+    document.documentElement.style.setProperty("--theme-color", color);
+
+    const hoverColors = {
+      "#6366f1": "#4f46e5",
+      "#ec4899": "#db2777",
+      "#14b8a6": "#0f766e",
+      "#f97316": "#ea580c",
+      "#eab308": "#ca8a04",
+      "#22c55e": "#16a34a",
+      "#3b82f6": "#2563eb"
+    };
+
+    document.documentElement.style.setProperty(
+      "--theme-hover",
+      hoverColors[color] || defaultColor
+    );
+
+    document.querySelectorAll(".theme-accent").forEach(el => {
+      el.style.color = color;
+    });
+
+    document.querySelectorAll(".theme-accent-bg").forEach(el => {
+      el.style.backgroundColor = color;
+    });
+
+    document.querySelectorAll(".theme-accent-border").forEach(el => {
+      el.style.borderColor = color;
+    });
+
+    document.querySelectorAll(".theme-option").forEach(button => {
+      const selected = button.dataset.theme === color;
+      button.style.outline = selected ? "3px solid white" : "none";
+      button.style.outlineOffset = "3px";
+    });
+  }
+
+  try {
+    applyTheme(localStorage.getItem("echoWallTheme") || defaultColor);
+  } catch {
+    applyTheme(defaultColor);
+  }
+
+  document.addEventListener("click", event => {
+    const button = event.target.closest(".theme-option");
+    if (!button) return;
+
+    const color = button.dataset.theme;
+    if (!allowedColors.includes(color)) return;
+
+    applyTheme(color);
+
+    try {
+      localStorage.setItem("echoWallTheme", color);
+    } catch {
+      // Theme still works for this visit if saving is unavailable.
+    }
+  });
+})();
   async function init() {
     updateSavedToggleBtn();
     await ensureSession();
