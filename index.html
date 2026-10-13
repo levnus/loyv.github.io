@@ -1385,27 +1385,39 @@ posts.forEach(post => feed.append(renderPost(post)));
   });
 })();
   async function init() {
-    updateSavedToggleBtn();
-    await ensureSession();
-    await loadSavedPosts();
-    await refreshData();
-    startRealtime();
-    setInterval(() => {
-      const visitStartedAt = Date.now();
+  updateSavedToggleBtn();
 
-setInterval(() => {
-  const timer = $("siteTimer");
-  if (!timer) return;
+  await ensureSession();
+  await loadSavedPosts();
+  await refreshData();
+  startRealtime();
 
-  const totalSeconds = Math.floor((Date.now() - visitStartedAt) / 1000);
+  // Start the visit timer
+  const visitStartedAt = Date.now();
 
-  const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
-  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
-  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  setInterval(() => {
+    const timer = $("siteTimer");
+    if (!timer) return;
 
-  timer.textContent = `${hours}:${minutes}:${seconds}`;
-}, 1000);
-  }
+    const totalSeconds = Math.floor(
+      (Date.now() - visitStartedAt) / 1000
+    );
+
+    const hours = String(
+      Math.floor(totalSeconds / 3600)
+    ).padStart(2, "0");
+
+    const minutes = String(
+      Math.floor((totalSeconds % 3600) / 60)
+    ).padStart(2, "0");
+
+    const seconds = String(
+      totalSeconds % 60
+    ).padStart(2, "0");
+
+    timer.textContent = `${hours}:${minutes}:${seconds}`;
+  }, 1000);
+}
 
   init().catch(err => {
     console.error(err);
