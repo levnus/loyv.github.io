@@ -1391,17 +1391,20 @@ posts.forEach(post => feed.append(renderPost(post)));
     await refreshData();
     startRealtime();
     setInterval(() => {
-      const timer = $("siteTimer");
-      if (!timer || !currentUser) return;
-      const now = new Date();
-      const started = new Date(currentUser.created_at || Date.now());
-      const diff = Math.max(0, now.getTime() - started.getTime());
-      const totalSeconds = Math.floor(diff / 1000);
-      const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
-      const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
-      const seconds = String(totalSeconds % 60).padStart(2, "0");
-      timer.textContent = `${hours}:${minutes}:${seconds}`;
-    }, 1000);
+      const visitStartedAt = Date.now();
+
+setInterval(() => {
+  const timer = $("siteTimer");
+  if (!timer) return;
+
+  const totalSeconds = Math.floor((Date.now() - visitStartedAt) / 1000);
+
+  const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+
+  timer.textContent = `${hours}:${minutes}:${seconds}`;
+}, 1000);
   }
 
   init().catch(err => {
