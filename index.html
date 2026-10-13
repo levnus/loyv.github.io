@@ -588,7 +588,7 @@ isAdmin = !!adminRecord;
     const author = make("div", "min-w-0");
 
 const avatar = make("div", "w-10 h-10 rounded-full overflow-hidden bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shrink-0");
-const postProfile = (profiles || []).find(p => p.user_id === post.user_id);
+const postProfile = (allProfiles || []).find(p => p.user_id === post.user_id);
 
 if (postProfile?.avatar_url && String(post.username || "").toLowerCase() !== "anonymous") {
   const avatarImg = document.createElement("img");
