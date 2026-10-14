@@ -131,6 +131,20 @@ button:not(.theme-option),
 
 <main class="max-w-2xl mx-auto px-4 pb-12 space-y-5">
 
+
+  <section id="notificationsPanel" class="wall-card hidden">
+    <div class="flex items-center justify-between gap-3 mb-3">
+      <h2 class="text-xl font-bold">🔔 Notifications</h2>
+      <button id="markNotificationsReadBtn" class="action" type="button">
+        Mark all read
+      </button>
+    </div>
+    <div id="notificationsList" class="space-y-3">
+      <p class="muted text-sm">Loading notifications...</p>
+    </div>
+  </section>
+
+
   <section id="setupPanel" class="wall-card hidden">
     <h2 class="text-xl font-bold mb-1">Welcome to Echo Wall 👋</h2>
     <p class="muted text-sm mb-4">Choose a username. No email needed.</p>
@@ -292,6 +306,92 @@ button:not(.theme-option),
   let loading = false;
   let showSavedOnly = false;
   let savedPostIds = new Set();
+  
+  let notifications = [];
+
+  async function loadNotifications() {
+    if (!currentUser?.id) return;
+
+    const { data, error } = await db
+      .from("notifications")
+      .select("id, actor_id, post_id, type, message, is_read, created_at")
+      .eq("recipient_id", currentUser.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error("Could not load notifications:", error.message);
+      $("notificationsList").textContent =
+        "Couldn't load notifications. Check your Supabase policies.";
+      return;
+    }
+
+    notifications = data || [];
+
+    const unread = notifications.filter(item => !item.is_read).length;
+    $("notificationBadge").textContent = unread;
+    $("notificationBadge").classList.toggle("hidden", unread === 0);
+
+    const list = $("notificationsList");
+    list.replaceChildren();
+
+    if (!notifications.length) {
+      list.append(make("p", "muted text-sm", "You're all caught up! No notifications yet."));
+      return;
+    }
+
+    notifications.forEach(item => {
+      const row = make(
+        "div",
+        "rounded-xl border border-slate-700 p-3 " +
+          (item.is_read ? "opacity-70" : "bg-slate-800")
+      );
+
+      row.append(make("p", "text-sm", item.message));
+      row.append(make("p", "muted text-xs mt-1", dateText(item.created_at)));
+
+      if (item.post_id) {
+        const viewBtn = make("button", "text-indigo-300 text-sm mt-2", "View wall");
+        viewBtn.type = "button";
+        viewBtn.addEventListener("click", () => {
+          show("notificationsPanel", false);
+          $("feed").scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        row.append(viewBtn);
+      }
+
+      list.append(row);
+    });
+  }
+
+  $("notificationsBtn").addEventListener("click", async () => {
+    const panel = $("notificationsPanel");
+    const opening = panel.classList.contains("hidden");
+    show("notificationsPanel", opening);
+
+    if (opening) {
+      await loadNotifications();
+      panel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
+
+  $("markNotificationsReadBtn").addEventListener("click", async () => {
+    if (!currentUser?.id) return;
+
+    const { error } = await db
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("recipient_id", currentUser.id)
+      .eq("is_read", false);
+
+    if (error) {
+      alert("Couldn't mark notifications as read: " + error.message);
+      return;
+    }
+
+    await loadNotifications();
+  });
+
   const SAVED_POSTS_KEY = "echoWallSavedPosts";
 
   function saveSavedPostsFallback() {
@@ -503,6 +603,7 @@ const boldBtn = $("boldBtn");
     show("myProfile");
     show("composer");
     show("editProfileBtn");
+    show("notificationsBtn");
     show("setupPanel", false);
   }
 
@@ -1043,8 +1144,9 @@ posts.forEach(post => feed.append(renderPost(post)));
 
       myProfile = data;
       renderMyProfile();
-      await refreshData();
-      startRealtime();
+        await refreshData();
+        await loadNotifications();
+        startRealtime();
       setStatus("Your profile is ready!", true);
     } catch (err) {
       alert(err.code === "23505"
