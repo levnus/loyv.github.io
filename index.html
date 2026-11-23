@@ -331,6 +331,41 @@ button:not(.theme-option),
 
   function applyMyNameColor(color) {
     const safeColor = getSafeNameColor(color);
+      document.querySelectorAll(".name-color-option").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const chosenColor = btn.dataset.color;
+      if (!currentUser) {
+        $("status").textContent = "Not signed in (currentUser is null)";
+        return;
+      }
+      if (!ALLOWED_NAME_COLORS.has(chosenColor)) return;
+
+      applyMyNameColor(chosenColor);
+      $("status").textContent = "Saving color...";
+
+      const { data, error } = await db
+        .from("profiles")
+        .update({ username_color: chosenColor })
+        .eq("id", currentUser.id)
+        .select();
+
+      if (error) {
+        $("status").textContent = "DB Error: " + error.message;
+        return;
+      }
+      if (!data || data.length === 0) {
+        $("status").textContent = "0 rows updated! Check RLS policy or if column is user_id instead of id.";
+        return;
+      }
+
+      $("status").textContent = "Color saved!";
+      if (myProfile) myProfile.username_color = chosenColor;
+      const idx = allProfiles.findIndex((p) => p.id === currentUser.id);
+      if (idx !== -1) allProfiles[idx].username_color = chosenColor;
+      renderFeed();
+    });
+  });
+
     const myUsernameEl = $("myUsername");
     if (myUsernameEl) myUsernameEl.style.color = safeColor;
 
