@@ -114,8 +114,8 @@ button:not(.theme-option),
   
   <div class="flex items-center justify-between gap-3">
     <div class="min-w-0">
-      <h1 class="text-4xl font-black tracking-tight text-indigo-400">Community Wall</h1>
-      <p class="muted text-sm mt-1">Your corner of the internet.</p>
+      <h1 class="text-4xl font-black tracking-tight text-indigo-400">The Wall</h1>
+      <p class="muted text-sm mt-1">Twitter for (more) racist people.</p>
     </div>
 
     <div class="flex items-center gap-2 shrink-0">
@@ -129,14 +129,14 @@ button:not(.theme-option),
 
 <main class="max-w-2xl mx-auto px-4 pb-12 space-y-5">
 <section id="setupPanel" class="wall-card hidden">
-    <h2 class="text-xl font-bold mb-1">Welcome to Echo Wall 👋</h2>
-    <p class="muted text-sm mb-4">Choose a username. No email needed.</p>
+    <h2 class="text-xl font-bold mb-1">Welcome to the wall</h2>
+    <p class="muted text-sm mb-4">Choose a username</p>
     <form id="setupForm" class="space-y-3">
       <input id="setupUsername" class="field" minlength="2" maxlength="30"
         placeholder="Username (2–30 characters)" required>
       <textarea id="setupBio" class="field" maxlength="250" rows="3"
         placeholder="Short bio (optional)"></textarea>
-      <button class="primary w-full" type="submit">Create my profile</button>
+      <button class="primary w-full" type="submit">Create profile</button>
     </form>
   </section>
 
@@ -147,13 +147,13 @@ button:not(.theme-option),
         <div id="myUsername" class="font-bold text-lg break-words"></div>
         <p id="myBio" class="muted text-sm mt-1 whitespace-pre-wrap break-words"></p>
         <div class="mt-3">
-   <p class="muted text-xs">⏱️ Time on Echo Wall</p>
+   <p class="muted text-xs">the clock.</p>
    <p id="siteTimer" class="text-indigo-300 font-bold text-lg">00:00:00</p>
 </div>
         <button id="viewMyProfileBtn" class="text-indigo-300 text-sm mt-2">View my profile →</button>
         <div class="mt-3">
   <label for="avatarFile" class="action inline-block cursor-pointer">
-    Change profile picture
+    Change profile phy
   </label>
   <input
     id="avatarFile"
@@ -163,7 +163,7 @@ button:not(.theme-option),
   >
   <p class="text-xs muted mt-2">JPG, PNG, WebP or GIF · Maximum 5 MB</p>
           <div class="mt-4">
-  <p class="text-sm font-semibold mb-2">🎨 Theme color</p>
+  <p class="text-sm font-semibold mb-2">tissué color</p>
   <div class="flex flex-wrap gap-3">
     <button type="button" class="theme-option w-8 h-8 rounded-full border-2 border-white" data-theme="#6366f1" style="background:#6366f1" aria-label="Indigo theme"></button>
     <button type="button" class="theme-option w-8 h-8 rounded-full border-2 border-white" data-theme="#ec4899" style="background:#ec4899" aria-label="Pink theme"></button>
@@ -180,7 +180,7 @@ button:not(.theme-option),
   </section>
 
   <section id="composer" class="wall-card hidden">
-    <h2 class="font-semibold mb-3">What's on your mind?</h2>
+    <h2 class="font-semibold mb-3">Write something bro, stats get removed automatically every 24 hours</h2>
     <form id="postForm" class="space-y-3">
       <div>
    <div class="flex gap-2 mb-2">
@@ -194,17 +194,17 @@ button:not(.theme-option),
 </div>
       <label class="flex items-center gap-2 text-sm muted cursor-pointer">
         <input id="anonymousToggle" type="checkbox">
-        Post anonymously
+        Anon mode
       </label>
       <div class="flex flex-wrap items-center justify-between gap-3">
         <label class="action cursor-pointer">
-          📷 Add image
+          Add image
           <input id="postImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden">
         </label>
         <span id="imageLabel" class="muted text-xs">Images up to 5 MB</span>
       </div>
       <img id="imagePreview" class="hidden max-h-56 rounded-xl object-contain" alt="Image preview">
-      <button id="publishBtn" class="primary w-full" type="submit">Publish to Echo Wall</button>
+      <button id="publishBtn" class="primary w-full" type="submit">Publish to the Wall</button>
     </form>
   </section>
 
@@ -215,12 +215,12 @@ button:not(.theme-option),
         <div class="min-w-0">
           <h2 id="profileViewName" class="text-xl font-bold break-words"></h2>
           <p id="profileViewBio" class="muted text-sm mt-2 whitespace-pre-wrap break-words"></p>
-          <p id="profileViewCount" class="text-indigo-300 text-sm mt-3">0 posts</p>
+          <p id="profileViewCount" class="text-indigo-300 text-sm mt-3">0 stat</p>
         </div>
       </div>
       <button id="closeProfileBtn" class="action">Close</button>
     </div>
-    <h3 class="font-semibold mt-5 mb-3">Posts</h3>
+    <h3 class="font-semibold mt-5 mb-3">Stat</h3>
     <div id="profilePosts" class="space-y-3"></div>
   </section>
 
@@ -237,12 +237,12 @@ button:not(.theme-option),
       id="searchInput"
       class="field mb-4"
       type="search"
-      placeholder="🔍 Search posts or usernames..."
+      placeholder="Search stat or monkey..."
       autocomplete="off"
     />
 
     <div id="feed" class="space-y-4">
-      <div class="wall-card muted text-sm text-center">Loading posts...</div>
+      <div class="wall-card muted text-sm text-center">Loading stat...</div>
     </div>
   </section>
 
@@ -251,7 +251,7 @@ button:not(.theme-option),
     <form id="editForm" class="space-y-3 mt-4">
       <label class="block text-sm muted">Username</label>
       <input id="editUsername" class="field" minlength="2" maxlength="30" required>
-      <label class="block text-sm muted">Short bio</label>
+      <label class="block text-sm muted">bio</label>
       <textarea id="editBio" class="field" maxlength="250" rows="3"></textarea>
       <div class="flex gap-2">
         <button type="submit" class="primary flex-1">Save changes</button>
