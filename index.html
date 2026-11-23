@@ -180,7 +180,7 @@ button:not(.theme-option),
   </section>
 
   <section id="composer" class="wall-card hidden">
-    <h2 class="font-semibold mb-3">Write something bro, stats get removed automatically every 24 hours</h2>
+    <h2 class="font-semibold mb-3">write.</h2>
     <form id="postForm" class="space-y-3">
       <div>
    <div class="flex gap-2 mb-2">
@@ -190,7 +190,7 @@ button:not(.theme-option),
    </div>
 
    <textarea id="postMessage" class="field" maxlength="1000" rows="5"
-     placeholder="Write something..."></textarea>
+     placeholder="Write something bro. it gets automatically deleted every 24 hours"></textarea>
 </div>
       <label class="flex items-center gap-2 text-sm muted cursor-pointer">
         <input id="anonymousToggle" type="checkbox">
@@ -823,7 +823,7 @@ author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
     let replySubmit = null;
 
     if (!isReply) {
-      replyBtn = make("button", "action", "↩ Reply");
+      replyBtn = make("button", "action", "↩ Oud");
       actions.append(replyBtn);
     }
 
@@ -852,7 +852,7 @@ author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
         const message = replyInput.value.trim();
 
         if (!message) {
-          alert("Please write a reply first.");
+          alert("Please write an oud first.");
           return;
         }
 
@@ -883,7 +883,7 @@ author.append(make("p", "muted text-xs mt-1", dateText(post.created_at)));
           alert("Couldn't send reply: " + err.message);
         } finally {
           replySubmit.disabled = false;
-          replySubmit.textContent = "Send reply";
+          replySubmit.textContent = "Send Oud";
         }
       });
 
