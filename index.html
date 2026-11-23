@@ -284,61 +284,10 @@ button:not(.theme-option),
 </main>
   
 <script>
-  const ALLOWED_NAME_COLORS = new Set([
-  '#ef4444', // Red
-  '#f97316', // Orange
-  '#eab308', // Yellow
-  '#22c55e', // Green
-  '#3b82f6', // Blue
-  '#06b6d4', // Cyan
-  '#a855f7', // Purple
-  '#ec4899', // Pink
-  '#ffffff', // White
-  '#94a3b8', // Gray
-]);
-
-function getSafeNameColor(color) {
-  return ALLOWED_NAME_COLORS.has(color) ? color : '#ffffff';
-}
-
-// 1. Handle clicking a username color swatch
-document.querySelectorAll('.name-color-option').forEach((btn) => {
-  btn.addEventListener('click', async () => {
-    const chosenColor = btn.dataset.color;
-    if (!ALLOWED_NAME_COLORS.has(chosenColor) || !currentUser) return;
-
-    // Update UI immediately
-    document.querySelectorAll('.name-color-option').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('myUsername').style.color = chosenColor;
-
-    // Save to Supabase profiles table
-    const { error } = await supabaseClient
-      .from('profiles')
-      .update({ username_color: chosenColor })
-      .eq('id', currentUser.id);
-
-    if (!error) {
-      currentProfile.username_color = chosenColor;
-      // Reload feed so the user's existing posts reflect the new color
-      loadPosts(); 
-    }
-  });
-});
-
-// 2. When loading the user's own profile, apply their saved color:
-// const myColor = getSafeNameColor(profile.username_color);
-// document.getElementById('myUsername').style.color = myColor;
-// document.querySelector(`.name-color-option[data-color="${myColor}"]`)?.classList.add('active');
-
-// 3. When rendering posts/replies in your feed (make sure your query joins profiles:username, username_color):
-// const authorColor = post.is_anonymous ? '#94a3b8' : getSafeNameColor(post.profiles?.username_color);
-// <span style="color: ${authorColor}" class="font-bold">${escapeHtml(authorName)}</span>
-
 (() => {
   "use strict";
 
-  const SUPABASE_URL = "https://qdncdhvhuhlwrksrxmeq.supabase.co";
+  const SUPABASE_URL = "https://supabase.co";
   const SUPABASE_KEY = "sb_publishable_BxFce1GWJtPN03dg8pRnLA_EkRk9-Sq";
 
   const $ = id => document.getElementById(id);
@@ -362,6 +311,59 @@ document.querySelectorAll('.name-color-option').forEach((btn) => {
   let showSavedOnly = false;
   let savedPostIds = new Set();
   const SAVED_POSTS_KEY = "echoWallSavedPosts";
+
+  const ALLOWED_NAME_COLORS = new Set([
+    "#ef4444", // Red
+    "#f97316", // Orange
+    "#eab308", // Yellow
+    "#22c55e", // Green
+    "#3b82f6", // Blue
+    "#06b6d4", // Cyan
+    "#a855f7", // Purple
+    "#ec4899", // Pink
+    "#ffffff", // White
+    "#94a3b8", // Gray
+  ]);
+
+  function getSafeNameColor(color) {
+    return ALLOWED_NAME_COLORS.has(color) ? color : "#ffffff";
+  }
+
+  function applyMyNameColor(color) {
+    const safeColor = getSafeNameColor(color);
+    const myUsernameEl = $("myUsername");
+    if (myUsernameEl) myUsernameEl.style.color = safeColor;
+
+    document.querySelectorAll(".name-color-option").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.color === safeColor);
+    });
+  }
+
+  document.querySelectorAll(".name-color-option").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const chosenColor = btn.dataset.color;
+      if (!ALLOWED_NAME_COLORS.has(chosenColor) || !currentUser) return;
+
+      // 1. Update your profile header & active ring immediately
+      applyMyNameColor(chosenColor);
+
+      // 2. Save to Supabase
+      const { error } = await db
+        .from("profiles")
+        .update({ username_color: chosenColor })
+        .eq("id", currentUser.id);
+
+      if (error) {
+        $("status").textContent = "Failed to save color: " + error.message;
+        return;
+      }
+
+      // 3. Update local state & re-render
+      if (myProfile) myProfile.username_color = chosenColor;
+      const idx = allProfiles.findIndex((p) => p.id === currentUser.id);
+      if (idx !== -1) allProfiles[idx].username_color = chosenColor;
+    });
+  });
 
   function saveSavedPostsFallback() {
     localStorage.setItem(SAVED_POSTS_KEY, JSON.stringify([...savedPostIds]));
