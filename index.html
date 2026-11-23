@@ -13,6 +13,12 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
+    .name-color-option.active {
+  border-color: #ffffff;
+  transform: scale(1.15);
+  box-shadow: 0 0 0 2px #0f172a;
+}
+
     body {
   background: color-mix(in srgb, var(--theme-color, #6366f1) 55%, #0f172a);
   color: white;
@@ -173,6 +179,21 @@ button:not(.theme-option),
     <button type="button" class="theme-option w-8 h-8 rounded-full border-2 border-white" data-theme="#22c55e" style="background:#22c55e" aria-label="Green theme"></button>
     <button type="button" class="theme-option w-8 h-8 rounded-full border-2 border-white" data-theme="#3b82f6" style="background:#3b82f6" aria-label="Blue theme"></button>
   </div>
+    <div class="mt-4">
+  <p class="text-sm font-semibold mb-2">username color</p>
+  <div id="usernameColorOptions" class="flex flex-wrap gap-2.5">
+    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#ef4444" style="background:#ef4444" title="Red"></button>
+    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#f97316" style="background:#f97316" title="Orange"></button>
+    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#eab308" style="background:#eab308" title="Yellow"></button>
+    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#22c55e" style="background:#22c55e" title="Green"></button>
+    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#3b82f6" style="background:#3b82f6" title="Blue"></button>
+    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#06b6d4" style="background:#06b6d4" title="Cyan"></button>
+    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#a855f7" style="background:#a855f7" title="Purple"></button>
+    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#ec4899" style="background:#ec4899" title="Pink"></button>
+    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#ffffff" style="background:#ffffff" title="White"></button>
+    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#94a3b8" style="background:#94a3b8" title="Gray"></button>
+  </div>
+</div>
 </div>
 </div>
       </div>
@@ -263,6 +284,57 @@ button:not(.theme-option),
 </main>
   
 <script>
+  const ALLOWED_NAME_COLORS = new Set([
+  '#ef4444', // Red
+  '#f97316', // Orange
+  '#eab308', // Yellow
+  '#22c55e', // Green
+  '#3b82f6', // Blue
+  '#06b6d4', // Cyan
+  '#a855f7', // Purple
+  '#ec4899', // Pink
+  '#ffffff', // White
+  '#94a3b8', // Gray
+]);
+
+function getSafeNameColor(color) {
+  return ALLOWED_NAME_COLORS.has(color) ? color : '#ffffff';
+}
+
+// 1. Handle clicking a username color swatch
+document.querySelectorAll('.name-color-option').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    const chosenColor = btn.dataset.color;
+    if (!ALLOWED_NAME_COLORS.has(chosenColor) || !currentUser) return;
+
+    // Update UI immediately
+    document.querySelectorAll('.name-color-option').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('myUsername').style.color = chosenColor;
+
+    // Save to Supabase profiles table
+    const { error } = await supabaseClient
+      .from('profiles')
+      .update({ username_color: chosenColor })
+      .eq('id', currentUser.id);
+
+    if (!error) {
+      currentProfile.username_color = chosenColor;
+      // Reload feed so the user's existing posts reflect the new color
+      loadPosts(); 
+    }
+  });
+});
+
+// 2. When loading the user's own profile, apply their saved color:
+// const myColor = getSafeNameColor(profile.username_color);
+// document.getElementById('myUsername').style.color = myColor;
+// document.querySelector(`.name-color-option[data-color="${myColor}"]`)?.classList.add('active');
+
+// 3. When rendering posts/replies in your feed (make sure your query joins profiles:username, username_color):
+// const authorColor = post.is_anonymous ? '#94a3b8' : getSafeNameColor(post.profiles?.username_color);
+// <span style="color: ${authorColor}" class="font-bold">${escapeHtml(authorName)}</span>
+
 (() => {
   "use strict";
 
