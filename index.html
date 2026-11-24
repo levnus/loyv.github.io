@@ -254,18 +254,13 @@ button:not(.theme-option),
       <label class="block text-sm muted">bio</label>
       <textarea id="editBio" class="field" maxlength="250" rows="3"></textarea>
       <label class="block text-sm muted">Username color</label>
-      <div id="usernameColorOptions" class="flex flex-wrap gap-3">
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#f87171" style="background:#f87171" aria-label="Red"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#fb923c" style="background:#fb923c" aria-label="Orange"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#facc15" style="background:#facc15" aria-label="Yellow"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#4ade80" style="background:#4ade80" aria-label="Green"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#60a5fa" style="background:#60a5fa" aria-label="Blue"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#22d3ee" style="background:#22d3ee" aria-label="Cyan"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#c084fc" style="background:#c084fc" aria-label="Purple"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#f472b6" style="background:#f472b6" aria-label="Pink"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#e2e8f0" style="background:#e2e8f0" aria-label="White"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#94a3b8" style="background:#94a3b8" aria-label="Gray"></button>
-      </div>
+      <select id="editUsernameColor" class="field">
+        <option value="#60a5fa">Blue</option><option value="#f87171">Red</option>
+        <option value="#fb923c">Orange</option><option value="#facc15">Yellow</option>
+        <option value="#4ade80">Green</option><option value="#2dd4bf">Teal</option>
+        <option value="#a78bfa">Purple</option><option value="#f472b6">Pink</option>
+        <option value="#f8fafc">White</option><option value="#9ca3af">Gray</option>
+      </select>
       <div class="flex gap-2">
         <button type="submit" class="primary flex-1">Save changes</button>
         <button type="button" id="cancelEditBtn" class="action">Cancel</button>
@@ -293,7 +288,6 @@ button:not(.theme-option),
 
   let currentUser = null;
   let myProfile = null;
-  let selectedUsernameColor = "#60a5fa";
   let isAdmin = false;
   let selectedImage = null;
   let allPosts = [];
@@ -471,10 +465,9 @@ const boldBtn = $("boldBtn");
       if (profile) {
         const mention = make(
           "button",
-          "font-bold hover:underline",
+          "text-indigo-300 font-bold hover:underline",
           "@" + profile.username
         );
-        mention.style.color = profile.username_color || "#60a5fa";
 
         mention.type = "button";
         mention.addEventListener("click", () => openProfile(profile.user_id));
@@ -495,6 +488,7 @@ const boldBtn = $("boldBtn");
 
     $("myUsername").textContent = "@" + myProfile.username;
     $("myUsername").style.color = myProfile.username_color || "#60a5fa";
+    $("editUsernameColor").value = myProfile.username_color || "#60a5fa";
     $("myBio").textContent = myProfile.bio || "No bio yet.";
 
     const avatar = $("myAvatar");
@@ -562,11 +556,15 @@ const boldBtn = $("boldBtn");
   .eq("user_id", currentUser.id)
   .maybeSingle();
 
-if (adminError) throw adminError;
-isAdmin = !!adminRecord;
+if (adminError) {
+  console.warn("Admin status could not be checked; continuing as a regular user:", adminError.message);
+  isAdmin = false;
+} else {
+  isAdmin = !!adminRecord;
+}
 
     const { data: profile, error } = await db.from("profiles")
-      .select("user_id, username, bio, avatar_url, username_color, created_at")
+      .select("user_id, username, bio, avatar_url, created_at, username_color")
       .eq("user_id", currentUser.id)
       .maybeSingle();
 
@@ -588,7 +586,7 @@ isAdmin = !!adminRecord;
         .select("id, user_id, username, message, created_at, parent_post_id, image_url, pinned")
         .order("created_at", { ascending: false })
         .limit(200),
-      db.from("profiles").select("user_id, username, bio, avatar_url, username_color, created_at"),
+      db.from("profiles").select("user_id, username, bio, avatar_url, created_at, username_color"),
       db.from("likes").select("post_id, user_id")
     ]);
 
@@ -615,8 +613,8 @@ isAdmin = !!adminRecord;
       "text-indigo-300 font-semibold text-sm hover:underline",
       "@" + (profile?.username || fallbackName || "user")
     );
-    button.style.color = profile?.username_color || "#60a5fa";
 
+    button.style.color = profile?.username_color || "#a5b4fc";
     if (userId) {
       button.addEventListener("click", () => openProfile(userId));
     } else {
@@ -1054,7 +1052,7 @@ posts.forEach(post => feed.append(renderPost(post)));
         username,
         bio,
         avatar_url: null
-      }).select("user_id, username, bio, avatar_url, username_color, created_at").single();
+      }).select("user_id, username, bio, avatar_url, created_at, username_color").single();
 
       if (error) throw error;
 
@@ -1182,8 +1180,7 @@ posts.forEach(post => feed.append(renderPost(post)));
 
     $("editUsername").value = myProfile.username;
     $("editBio").value = myProfile.bio || "";
-    selectedUsernameColor = myProfile.username_color || "#60a5fa";
-    updateUsernameColorOptions();
+    $("editUsernameColor").value = myProfile.username_color || "#60a5fa";
 
     show("editPanel");
     $("editPanel").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1198,6 +1195,7 @@ posts.forEach(post => feed.append(renderPost(post)));
 
     const username = $("editUsername").value.trim();
     const bio = $("editBio").value.trim();
+    const username_color = $("editUsernameColor").value;
 
     if (username.length < 2 || username.length > 30) {
       alert("Username must be 2–30 characters.");
@@ -1209,9 +1207,9 @@ posts.forEach(post => feed.append(renderPost(post)));
 
     try {
       const { data, error } = await db.from("profiles")
-        .update({ username, bio })
+        .update({ username, bio, username_color })
         .eq("user_id", currentUser.id)
-        .select("user_id, username, bio, avatar_url, username_color, created_at")
+        .select("user_id, username, bio, avatar_url, created_at, username_color")
         .single();
 
       if (error) throw error;
@@ -1260,21 +1258,7 @@ posts.forEach(post => feed.append(renderPost(post)));
     }
   });
 
-      <textarea id="editBio" class="field" maxlength="250" rows="3"></textarea>
-      <label class="block text-sm muted">Username color</label>
-      <div id="usernameColorOptions" class="flex flex-wrap gap-3">
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#f87171" style="background:#f87171" aria-label="Red"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#fb923c" style="background:#fb923c" aria-label="Orange"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#facc15" style="background:#facc15" aria-label="Yellow"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#4ade80" style="background:#4ade80" aria-label="Green"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#60a5fa" style="background:#60a5fa" aria-label="Blue"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#22d3ee" style="background:#22d3ee" aria-label="Cyan"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#c084fc" style="background:#c084fc" aria-label="Purple"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#f472b6" style="background:#f472b6" aria-label="Pink"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#e2e8f0" style="background:#e2e8f0" aria-label="White"></button>
-        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#94a3b8" style="background:#94a3b8" aria-label="Gray"></button>
-      </div>
-      <div class="flex gap-2">
+  $("avatarFile").addEventListener("change", async (event) => {
   const file = event.target.files[0];
   if (!file) return;
 
@@ -1462,8 +1446,8 @@ posts.forEach(post => feed.append(renderPost(post)));
 
   init().catch(err => {
     console.error(err);
-    setStatus("Connection issue. Please refresh.");
-    alert(err.message);
+    setStatus("Connection issue: " + (err.message || "Unknown error"));
+    alert("Echo Wall couldn't connect: " + (err.message || "Unknown error"));
   });
 })();
 </script>
