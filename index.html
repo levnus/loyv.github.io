@@ -13,12 +13,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    .name-color-option.active {
-  border-color: #ffffff;
-  transform: scale(1.15);
-  box-shadow: 0 0 0 2px #0f172a;
-}
-
     body {
   background: color-mix(in srgb, var(--theme-color, #6366f1) 55%, #0f172a);
   color: white;
@@ -179,21 +173,6 @@ button:not(.theme-option),
     <button type="button" class="theme-option w-8 h-8 rounded-full border-2 border-white" data-theme="#22c55e" style="background:#22c55e" aria-label="Green theme"></button>
     <button type="button" class="theme-option w-8 h-8 rounded-full border-2 border-white" data-theme="#3b82f6" style="background:#3b82f6" aria-label="Blue theme"></button>
   </div>
-    <div class="mt-4">
-  <p class="text-sm font-semibold mb-2">username color</p>
-  <div id="usernameColorOptions" class="flex flex-wrap gap-2.5">
-    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#ef4444" style="background:#ef4444" title="Red"></button>
-    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#f97316" style="background:#f97316" title="Orange"></button>
-    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#eab308" style="background:#eab308" title="Yellow"></button>
-    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#22c55e" style="background:#22c55e" title="Green"></button>
-    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#3b82f6" style="background:#3b82f6" title="Blue"></button>
-    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#06b6d4" style="background:#06b6d4" title="Cyan"></button>
-    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#a855f7" style="background:#a855f7" title="Purple"></button>
-    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#ec4899" style="background:#ec4899" title="Pink"></button>
-    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#ffffff" style="background:#ffffff" title="White"></button>
-    <button type="button" class="name-color-option w-7 h-7 rounded-full border-2 border-slate-600" data-color="#94a3b8" style="background:#94a3b8" title="Gray"></button>
-  </div>
-</div>
 </div>
 </div>
       </div>
@@ -274,6 +253,19 @@ button:not(.theme-option),
       <input id="editUsername" class="field" minlength="2" maxlength="30" required>
       <label class="block text-sm muted">bio</label>
       <textarea id="editBio" class="field" maxlength="250" rows="3"></textarea>
+      <label class="block text-sm muted">Username color</label>
+      <div id="usernameColorOptions" class="flex flex-wrap gap-3">
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#f87171" style="background:#f87171" aria-label="Red"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#fb923c" style="background:#fb923c" aria-label="Orange"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#facc15" style="background:#facc15" aria-label="Yellow"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#4ade80" style="background:#4ade80" aria-label="Green"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#60a5fa" style="background:#60a5fa" aria-label="Blue"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#22d3ee" style="background:#22d3ee" aria-label="Cyan"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#c084fc" style="background:#c084fc" aria-label="Purple"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#f472b6" style="background:#f472b6" aria-label="Pink"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#e2e8f0" style="background:#e2e8f0" aria-label="White"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#94a3b8" style="background:#94a3b8" aria-label="Gray"></button>
+      </div>
       <div class="flex gap-2">
         <button type="submit" class="primary flex-1">Save changes</button>
         <button type="button" id="cancelEditBtn" class="action">Cancel</button>
@@ -287,7 +279,7 @@ button:not(.theme-option),
 (() => {
   "use strict";
 
-  const SUPABASE_URL = "https://supabase.co";
+  const SUPABASE_URL = "https://qdncdhvhuhlwrksrxmeq.supabase.co";
   const SUPABASE_KEY = "sb_publishable_BxFce1GWJtPN03dg8pRnLA_EkRk9-Sq";
 
   const $ = id => document.getElementById(id);
@@ -301,6 +293,7 @@ button:not(.theme-option),
 
   let currentUser = null;
   let myProfile = null;
+  let selectedUsernameColor = "#60a5fa";
   let isAdmin = false;
   let selectedImage = null;
   let allPosts = [];
@@ -312,68 +305,7 @@ button:not(.theme-option),
   let savedPostIds = new Set();
   const SAVED_POSTS_KEY = "echoWallSavedPosts";
 
-  const ALLOWED_NAME_COLORS = new Set([
-    "#ef4444", // Red
-    "#f97316", // Orange
-    "#eab308", // Yellow
-    "#22c55e", // Green
-    "#3b82f6", // Blue
-    "#06b6d4", // Cyan
-    "#a855f7", // Purple
-    "#ec4899", // Pink
-    "#ffffff", // White
-    "#94a3b8", // Gray
-  ]);
-
-  function getSafeNameColor(color) {
-    return ALLOWED_NAME_COLORS.has(color) ? color : "#ffffff";
-  }
-
-  function applyMyNameColor(color) {
-    const safeColor = getSafeNameColor(color);
-    const myUsernameEl = $("myUsername");
-    if (myUsernameEl) myUsernameEl.style.color = safeColor;
-
-    document.querySelectorAll(".name-color-option").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.color === safeColor);
-    });
-  }
-
-  document.querySelectorAll(".name-color-option").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const chosenColor = btn.dataset.color;
-      if (!currentUser) {
-        $("status").textContent = "Not signed in (currentUser is null)";
-        return;
-      }
-      if (!ALLOWED_NAME_COLORS.has(chosenColor)) return;
-
-      applyMyNameColor(chosenColor);
-      $("status").textContent = "Saving color...";
-
-      const { data, error } = await db
-        .from("profiles")
-        .update({ username_color: chosenColor })
-        .eq("id", currentUser.id)
-        .select();
-
-      if (error) {
-        $("status").textContent = "DB Error: " + error.message;
-        return;
-      }
-      if (!data || data.length === 0) {
-        $("status").textContent = "0 rows updated! Check RLS policy or if column is user_id instead of id.";
-        return;
-      }
-
-      $("status").textContent = "Color saved!";
-      if (myProfile) myProfile.username_color = chosenColor;
-      const idx = allProfiles.findIndex((p) => p.id === currentUser.id);
-      if (idx !== -1) allProfiles[idx].username_color = chosenColor;
-      if (typeof renderFeed === "function") renderFeed();
-    });
-  });
-
+  function saveSavedPostsFallback() {
     localStorage.setItem(SAVED_POSTS_KEY, JSON.stringify([...savedPostIds]));
   }
 
@@ -539,9 +471,10 @@ const boldBtn = $("boldBtn");
       if (profile) {
         const mention = make(
           "button",
-          "text-indigo-300 font-bold hover:underline",
+          "font-bold hover:underline",
           "@" + profile.username
         );
+        mention.style.color = profile.username_color || "#60a5fa";
 
         mention.type = "button";
         mention.addEventListener("click", () => openProfile(profile.user_id));
@@ -561,6 +494,7 @@ const boldBtn = $("boldBtn");
     if (!myProfile) return;
 
     $("myUsername").textContent = "@" + myProfile.username;
+    $("myUsername").style.color = myProfile.username_color || "#60a5fa";
     $("myBio").textContent = myProfile.bio || "No bio yet.";
 
     const avatar = $("myAvatar");
@@ -632,7 +566,7 @@ if (adminError) throw adminError;
 isAdmin = !!adminRecord;
 
     const { data: profile, error } = await db.from("profiles")
-            .select("user_id, username, bio, avatar_url, username_color, created_at")
+      .select("user_id, username, bio, avatar_url, username_color, created_at")
       .eq("user_id", currentUser.id)
       .maybeSingle();
 
@@ -654,7 +588,7 @@ isAdmin = !!adminRecord;
         .select("id, user_id, username, message, created_at, parent_post_id, image_url, pinned")
         .order("created_at", { ascending: false })
         .limit(200),
-      db.from("profiles").select("user_id, username, bio, avatar_url, created_at"),
+      db.from("profiles").select("user_id, username, bio, avatar_url, username_color, created_at"),
       db.from("likes").select("post_id, user_id")
     ]);
 
@@ -681,6 +615,7 @@ isAdmin = !!adminRecord;
       "text-indigo-300 font-semibold text-sm hover:underline",
       "@" + (profile?.username || fallbackName || "user")
     );
+    button.style.color = profile?.username_color || "#60a5fa";
 
     if (userId) {
       button.addEventListener("click", () => openProfile(userId));
@@ -1060,6 +995,7 @@ posts.forEach(post => feed.append(renderPost(post)));
 
     $("profileView").dataset.userId = userId;
     $("profileViewName").textContent = "@" + profile.username;
+    $("profileViewName").style.color = profile.username_color || "#60a5fa";
     $("profileViewBio").textContent = profile.bio || "No bio yet.";
 
     const avatar = $("profileViewAvatar");
@@ -1118,7 +1054,7 @@ posts.forEach(post => feed.append(renderPost(post)));
         username,
         bio,
         avatar_url: null
-      }).select("user_id, username, bio, avatar_url, created_at").single();
+      }).select("user_id, username, bio, avatar_url, username_color, created_at").single();
 
       if (error) throw error;
 
@@ -1246,6 +1182,8 @@ posts.forEach(post => feed.append(renderPost(post)));
 
     $("editUsername").value = myProfile.username;
     $("editBio").value = myProfile.bio || "";
+    selectedUsernameColor = myProfile.username_color || "#60a5fa";
+    updateUsernameColorOptions();
 
     show("editPanel");
     $("editPanel").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1273,7 +1211,7 @@ posts.forEach(post => feed.append(renderPost(post)));
       const { data, error } = await db.from("profiles")
         .update({ username, bio })
         .eq("user_id", currentUser.id)
-        .select("user_id, username, bio, avatar_url, created_at")
+        .select("user_id, username, bio, avatar_url, username_color, created_at")
         .single();
 
       if (error) throw error;
@@ -1322,7 +1260,21 @@ posts.forEach(post => feed.append(renderPost(post)));
     }
   });
 
-  $("avatarFile").addEventListener("change", async (event) => {
+      <textarea id="editBio" class="field" maxlength="250" rows="3"></textarea>
+      <label class="block text-sm muted">Username color</label>
+      <div id="usernameColorOptions" class="flex flex-wrap gap-3">
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#f87171" style="background:#f87171" aria-label="Red"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#fb923c" style="background:#fb923c" aria-label="Orange"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#facc15" style="background:#facc15" aria-label="Yellow"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#4ade80" style="background:#4ade80" aria-label="Green"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#60a5fa" style="background:#60a5fa" aria-label="Blue"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#22d3ee" style="background:#22d3ee" aria-label="Cyan"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#c084fc" style="background:#c084fc" aria-label="Purple"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#f472b6" style="background:#f472b6" aria-label="Pink"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#e2e8f0" style="background:#e2e8f0" aria-label="White"></button>
+        <button type="button" class="username-color-option w-8 h-8 rounded-full border-2 border-white" data-color="#94a3b8" style="background:#94a3b8" aria-label="Gray"></button>
+      </div>
+      <div class="flex gap-2">
   const file = event.target.files[0];
   if (!file) return;
 
