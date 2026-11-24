@@ -331,63 +331,6 @@ button:not(.theme-option),
 
   function applyMyNameColor(color) {
     const safeColor = getSafeNameColor(color);
-      document.querySelectorAll(".name-color-option").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const chosenColor = btn.dataset.color;
-      if (!currentUser) {
-        $("status").textContent = "Not signed in (currentUser is null)";
-        return;
-      }
-      if (!ALLOWED_NAME_COLORS.has(chosenColor)) return;
-
-<script>
-(() => {
-  "use strict";
-
-  const SUPABASE_URL = "https://supabase.co";
-  const SUPABASE_KEY = "sb_publishable_BxFce1GWJtPN03dg8pRnLA_EkRk9-Sq";
-
-  const $ = id => document.getElementById(id);
-
-  if (!window.supabase) {
-    $("status").textContent = "Supabase failed to load. Check your internet connection.";
-    return;
-  }
-
-  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-  let currentUser = null;
-  let myProfile = null;
-  let isAdmin = false;
-  let selectedImage = null;
-  let allPosts = [];
-  let allProfiles = [];
-  let allLikes = [];
-  let channel = null;
-  let loading = false;
-  let showSavedOnly = false;
-  let savedPostIds = new Set();
-  const SAVED_POSTS_KEY = "echoWallSavedPosts";
-
-  const ALLOWED_NAME_COLORS = new Set([
-    "#ef4444", // Red
-    "#f97316", // Orange
-    "#eab308", // Yellow
-    "#22c55e", // Green
-    "#3b82f6", // Blue
-    "#06b6d4", // Cyan
-    "#a855f7", // Purple
-    "#ec4899", // Pink
-    "#ffffff", // White
-    "#94a3b8", // Gray
-  ]);
-
-  function getSafeNameColor(color) {
-    return ALLOWED_NAME_COLORS.has(color) ? color : "#ffffff";
-  }
-
-  function applyMyNameColor(color) {
-    const safeColor = getSafeNameColor(color);
     const myUsernameEl = $("myUsername");
     if (myUsernameEl) myUsernameEl.style.color = safeColor;
 
