@@ -632,7 +632,7 @@ if (adminError) throw adminError;
 isAdmin = !!adminRecord;
 
     const { data: profile, error } = await db.from("profiles")
-      .select("user_id, username, bio, avatar_url, created_at")
+            .select("user_id, username, bio, avatar_url, username_color, created_at")
       .eq("user_id", currentUser.id)
       .maybeSingle();
 
